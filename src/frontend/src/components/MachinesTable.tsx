@@ -8,12 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye } from "lucide-react";
+import { CalendarClock, Eye } from "lucide-react";
 import type { MachineRecord } from "./AddMachineDialog";
 
 interface Props {
   machines: MachineRecord[];
   onViewDetail: (machine: MachineRecord) => void;
+  onReschedule: (machine: MachineRecord) => void;
 }
 
 function formatDate(d: string) {
@@ -25,7 +26,11 @@ function formatDate(d: string) {
   });
 }
 
-export default function MachinesTable({ machines, onViewDetail }: Props) {
+export default function MachinesTable({
+  machines,
+  onViewDetail,
+  onReschedule,
+}: Props) {
   if (machines.length === 0) {
     return (
       <div
@@ -53,7 +58,7 @@ export default function MachinesTable({ machines, onViewDetail }: Props) {
             <TableHead className="font-semibold">Due Date</TableHead>
             <TableHead className="font-semibold">Next Clean Date</TableHead>
             <TableHead className="font-semibold">Status</TableHead>
-            <TableHead className="font-semibold">Details</TableHead>
+            <TableHead className="font-semibold">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -76,16 +81,28 @@ export default function MachinesTable({ machines, onViewDetail }: Props) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    data-ocid={`machine_detail.open_modal_button.${i + 1}`}
-                    onClick={() => onViewDetail(m)}
-                    className="flex items-center gap-1.5 text-primary hover:text-primary"
-                  >
-                    <Eye className="h-4 w-4" />
-                    View
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      data-ocid={`machine_detail.open_modal_button.${i + 1}`}
+                      onClick={() => onViewDetail(m)}
+                      className="flex items-center gap-1.5 text-primary hover:text-primary"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      data-ocid={`reschedule.open_modal_button.${i + 1}`}
+                      onClick={() => onReschedule(m)}
+                      className="flex items-center gap-1.5 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                      Reschedule
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );

@@ -9,8 +9,7 @@ import AddMachineDialog, {
 import MachineDetailDialog from "../components/MachineDetailDialog";
 import MachineStatsWidgets from "../components/MachineStatsWidgets";
 import MachinesTable from "../components/MachinesTable";
-import RecordsTable from "../components/RecordsTable";
-import { useGetAllRecords } from "../hooks/useQueries";
+import RescheduleDateDialog from "../components/RescheduleDateDialog";
 
 function exportToExcel(machines: MachineRecord[]) {
   const headers = [
@@ -55,20 +54,30 @@ function exportToExcel(machines: MachineRecord[]) {
 }
 
 export default function DataPortal() {
-  const { data: records = [], isLoading } = useGetAllRecords();
-  const [activeTab, setActiveTab] = useState<"records" | "machines">(
-    "machines",
-  );
   const [machineDialogOpen, setMachineDialogOpen] = useState(false);
   const [machines, setMachines] = useState<MachineRecord[]>([]);
   const [detailMachine, setDetailMachine] = useState<MachineRecord | null>(
     null,
   );
+  const [rescheduleMachine, setRescheduleMachine] =
+    useState<MachineRecord | null>(null);
   const currentYear = new Date().getFullYear();
 
   const handleAddMachine = (record: MachineRecord) => {
     setMachines((prev) => [...prev, record]);
-    setActiveTab("machines");
+  };
+
+  const handleRescheduleSave = (
+    id: string,
+    doneDate: string,
+    dueDate: string,
+    nextCleanDate: string,
+  ) => {
+    setMachines((prev) =>
+      prev.map((m) =>
+        m.id === id ? { ...m, doneDate, dueDate, nextCleanDate } : m,
+      ),
+    );
   };
 
   return (
@@ -124,96 +133,47 @@ export default function DataPortal() {
       </header>
 
       <main className="container mx-auto px-6 py-8 max-w-6xl space-y-8">
-        {/* Tab Nav */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
-            <button
-              type="button"
-              data-ocid="nav.records.tab"
-              onClick={() => setActiveTab("records")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${
-                activeTab === "records"
-                  ? "bg-card text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All Records
-              {records.length > 0 && (
-                <span className="bg-primary/10 text-primary text-xs font-semibold px-1.5 py-0.5 rounded-full">
-                  {records.length}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              data-ocid="nav.machines.tab"
-              onClick={() => setActiveTab("machines")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${
-                activeTab === "machines"
-                  ? "bg-card text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Machines
-              {machines.length > 0 && (
-                <span className="bg-primary/10 text-primary text-xs font-semibold px-1.5 py-0.5 rounded-full">
-                  {machines.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Content */}
-        <motion.div
-          key={activeTab}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {activeTab === "records" ? (
-            <RecordsTable records={records} isLoading={isLoading} />
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-lg font-semibold">
-                  Machine Records
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    data-ocid="machines.export.button"
-                    onClick={() => exportToExcel(machines)}
-                    disabled={machines.length === 0}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export Excel
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    data-ocid="machines.add_machine.open_modal_button"
-                    onClick={() => setMachineDialogOpen(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                    Add Machine
-                  </Button>
-                </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold">
+                Machine Records
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-ocid="machines.export.button"
+                  onClick={() => exportToExcel(machines)}
+                  disabled={machines.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-ocid="machines.add_machine.open_modal_button"
+                  onClick={() => setMachineDialogOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Add Machine
+                </Button>
               </div>
-              <MachineStatsWidgets machines={machines} />
-              <MachinesTable
-                machines={machines}
-                onViewDetail={setDetailMachine}
-              />
             </div>
-          )}
+            <MachineStatsWidgets machines={machines} />
+            <MachinesTable
+              machines={machines}
+              onViewDetail={setDetailMachine}
+              onReschedule={setRescheduleMachine}
+            />
+          </div>
         </motion.div>
       </main>
 
@@ -245,6 +205,13 @@ export default function DataPortal() {
         open={!!detailMachine}
         onOpenChange={(o) => !o && setDetailMachine(null)}
         machine={detailMachine}
+      />
+
+      <RescheduleDateDialog
+        open={!!rescheduleMachine}
+        onOpenChange={(o) => !o && setRescheduleMachine(null)}
+        machine={rescheduleMachine}
+        onSave={handleRescheduleSave}
       />
     </div>
   );

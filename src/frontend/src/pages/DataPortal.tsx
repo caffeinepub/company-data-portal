@@ -1,16 +1,30 @@
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Database } from "lucide-react";
+import { Building2, Database, PlusCircle } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
+import AddMachineDialog, {
+  type MachineRecord,
+} from "../components/AddMachineDialog";
 import DataEntryForm from "../components/DataEntryForm";
+import MachinesTable from "../components/MachinesTable";
 import RecordsTable from "../components/RecordsTable";
 import StatsCards from "../components/StatsCards";
 import { useGetAllRecords } from "../hooks/useQueries";
 
 export default function DataPortal() {
   const { data: records = [], isLoading } = useGetAllRecords();
-  const [activeTab, setActiveTab] = useState<"form" | "records">("form");
+  const [activeTab, setActiveTab] = useState<"form" | "records" | "machines">(
+    "form",
+  );
+  const [machineDialogOpen, setMachineDialogOpen] = useState(false);
+  const [machines, setMachines] = useState<MachineRecord[]>([]);
   const currentYear = new Date().getFullYear();
+
+  const handleAddMachine = (record: MachineRecord) => {
+    setMachines((prev) => [...prev, record]);
+    setActiveTab("machines");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,18 +47,30 @@ export default function DataPortal() {
               </div>
               <div>
                 <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-                  DataPortal
+                  TA Hard Hygiene Work
                 </h1>
                 <p className="text-xs text-muted-foreground font-medium">
                   Company Data Management
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Building2 className="h-4 w-4" />
-              <span className="text-sm font-medium hidden sm:block">
-                Enterprise Suite
-              </span>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="default"
+                size="sm"
+                data-ocid="header.add_machine.open_modal_button"
+                onClick={() => setMachineDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Add Machine
+              </Button>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Building2 className="h-4 w-4" />
+                <span className="text-sm font-medium hidden sm:block">
+                  Enterprise Suite
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -96,6 +122,23 @@ export default function DataPortal() {
                 </span>
               )}
             </button>
+            <button
+              type="button"
+              data-ocid="nav.machines.tab"
+              onClick={() => setActiveTab("machines")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${
+                activeTab === "machines"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Machines
+              {machines.length > 0 && (
+                <span className="bg-primary/10 text-primary text-xs font-semibold px-1.5 py-0.5 rounded-full">
+                  {machines.length}
+                </span>
+              )}
+            </button>
           </div>
         </motion.div>
 
@@ -108,8 +151,27 @@ export default function DataPortal() {
         >
           {activeTab === "form" ? (
             <DataEntryForm onSuccess={() => setActiveTab("records")} />
-          ) : (
+          ) : activeTab === "records" ? (
             <RecordsTable records={records} isLoading={isLoading} />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg font-semibold">
+                  Machine Records
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-ocid="machines.add_machine.open_modal_button"
+                  onClick={() => setMachineDialogOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Add Machine
+                </Button>
+              </div>
+              <MachinesTable machines={machines} />
+            </div>
           )}
         </motion.div>
       </main>
@@ -131,6 +193,12 @@ export default function DataPortal() {
           </p>
         </div>
       </footer>
+
+      <AddMachineDialog
+        open={machineDialogOpen}
+        onOpenChange={setMachineDialogOpen}
+        onAdd={handleAddMachine}
+      />
     </div>
   );
 }

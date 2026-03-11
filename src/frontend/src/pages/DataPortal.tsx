@@ -1,24 +1,69 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Database, PlusCircle } from "lucide-react";
+import { Building2, Download, PlusCircle } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import AddMachineDialog, {
   type MachineRecord,
 } from "../components/AddMachineDialog";
-import DataEntryForm from "../components/DataEntryForm";
+import MachineDetailDialog from "../components/MachineDetailDialog";
+import MachineStatsWidgets from "../components/MachineStatsWidgets";
 import MachinesTable from "../components/MachinesTable";
 import RecordsTable from "../components/RecordsTable";
-import StatsCards from "../components/StatsCards";
 import { useGetAllRecords } from "../hooks/useQueries";
+
+function exportToExcel(machines: MachineRecord[]) {
+  const headers = [
+    "#",
+    "Machine Type",
+    "Machine No.",
+    "Done Date",
+    "Due Date",
+    "Status",
+    "Parts",
+  ];
+  const rows = machines.map((m, i) => {
+    const isOverdue =
+      m.dueDate && new Date(`${m.dueDate}T00:00:00`) < new Date();
+    const parts = (m.parts || [])
+      .map((p) => `${p.name}:${p.status}`)
+      .join(" | ");
+    return [
+      i + 1,
+      m.machineType,
+      m.machineNo,
+      m.doneDate || "-",
+      m.dueDate || "-",
+      isOverdue ? "Overdue" : "On Track",
+      parts || "-",
+    ];
+  });
+
+  const csv = [headers, ...rows]
+    .map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+    )
+    .join("\r\n");
+
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `machines_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function DataPortal() {
   const { data: records = [], isLoading } = useGetAllRecords();
-  const [activeTab, setActiveTab] = useState<"form" | "records" | "machines">(
-    "form",
+  const [activeTab, setActiveTab] = useState<"records" | "machines">(
+    "machines",
   );
   const [machineDialogOpen, setMachineDialogOpen] = useState(false);
   const [machines, setMachines] = useState<MachineRecord[]>([]);
+  const [detailMachine, setDetailMachine] = useState<MachineRecord | null>(
+    null,
+  );
   const currentYear = new Date().getFullYear();
 
   const handleAddMachine = (record: MachineRecord) => {
@@ -39,18 +84,20 @@ export default function DataPortal() {
             backgroundPosition: "center",
           }}
         />
-        <div className="relative container mx-auto px-6 py-6 max-w-6xl">
+        <div className="relative container mx-auto px-6 py-4 max-w-6xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 border border-primary/20">
-                <Database className="h-5 w-5 text-primary" />
-              </div>
+              <img
+                src="/assets/uploads/image-1-1.png"
+                alt="Logo"
+                className="h-14 w-14 object-contain rounded-md"
+              />
               <div>
                 <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
                   TA Hard Hygiene Work
                 </h1>
                 <p className="text-xs text-muted-foreground font-medium">
-                  Company Data Management
+                  Machine Cleaning Management
                 </p>
               </div>
             </div>
@@ -77,34 +124,13 @@ export default function DataPortal() {
       </header>
 
       <main className="container mx-auto px-6 py-8 max-w-6xl space-y-8">
-        {/* Stats */}
+        {/* Tab Nav */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <StatsCards records={records} isLoading={isLoading} />
-        </motion.div>
-
-        {/* Tab Nav */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
           <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
-            <button
-              type="button"
-              data-ocid="nav.form.tab"
-              onClick={() => setActiveTab("form")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                activeTab === "form"
-                  ? "bg-card text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Add Record
-            </button>
             <button
               type="button"
               data-ocid="nav.records.tab"
@@ -149,9 +175,7 @@ export default function DataPortal() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {activeTab === "form" ? (
-            <DataEntryForm onSuccess={() => setActiveTab("records")} />
-          ) : activeTab === "records" ? (
+          {activeTab === "records" ? (
             <RecordsTable records={records} isLoading={isLoading} />
           ) : (
             <div className="space-y-4">
@@ -159,18 +183,35 @@ export default function DataPortal() {
                 <h2 className="font-display text-lg font-semibold">
                   Machine Records
                 </h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-ocid="machines.add_machine.open_modal_button"
-                  onClick={() => setMachineDialogOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  Add Machine
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-ocid="machines.export.button"
+                    onClick={() => exportToExcel(machines)}
+                    disabled={machines.length === 0}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export Excel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-ocid="machines.add_machine.open_modal_button"
+                    onClick={() => setMachineDialogOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Add Machine
+                  </Button>
+                </div>
               </div>
-              <MachinesTable machines={machines} />
+              <MachineStatsWidgets machines={machines} />
+              <MachinesTable
+                machines={machines}
+                onViewDetail={setDetailMachine}
+              />
             </div>
           )}
         </motion.div>
@@ -198,6 +239,12 @@ export default function DataPortal() {
         open={machineDialogOpen}
         onOpenChange={setMachineDialogOpen}
         onAdd={handleAddMachine}
+      />
+
+      <MachineDetailDialog
+        open={!!detailMachine}
+        onOpenChange={(o) => !o && setDetailMachine(null)}
+        machine={detailMachine}
       />
     </div>
   );

@@ -26,6 +26,45 @@ function formatDate(d: string) {
   });
 }
 
+function daysUntilNextClean(nextCleanDate: string): number | null {
+  if (!nextCleanDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(`${nextCleanDate}T00:00:00`);
+  target.setHours(0, 0, 0, 0);
+  return Math.round(
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+}
+
+function CountdownBadge({ days }: { days: number | null }) {
+  if (days === null)
+    return <span className="text-muted-foreground text-xs">-</span>;
+  if (days < 0)
+    return (
+      <Badge variant="destructive" className="text-xs font-semibold">
+        {Math.abs(days)}d OVERDUE
+      </Badge>
+    );
+  if (days === 0)
+    return (
+      <Badge className="bg-amber-500 text-white text-xs font-semibold hover:bg-amber-500">
+        TODAY
+      </Badge>
+    );
+  if (days <= 7)
+    return (
+      <Badge className="bg-yellow-500 text-white text-xs font-semibold hover:bg-yellow-500">
+        DUE IN {days}d
+      </Badge>
+    );
+  return (
+    <Badge className="bg-green-600 text-white text-xs font-semibold hover:bg-green-600">
+      DUE IN {days}d
+    </Badge>
+  );
+}
+
 export default function MachinesTable({
   machines,
   onViewDetail,
@@ -57,6 +96,7 @@ export default function MachinesTable({
             <TableHead className="font-semibold">Done Date</TableHead>
             <TableHead className="font-semibold">Due Date</TableHead>
             <TableHead className="font-semibold">Next Clean Date</TableHead>
+            <TableHead className="font-semibold">Countdown</TableHead>
             <TableHead className="font-semibold">Status</TableHead>
             <TableHead className="font-semibold">Actions</TableHead>
           </TableRow>
@@ -65,6 +105,7 @@ export default function MachinesTable({
           {machines.map((m, i) => {
             const isOverdue =
               m.dueDate && new Date(`${m.dueDate}T00:00:00`) < new Date();
+            const days = daysUntilNextClean(m.nextCleanDate);
             return (
               <TableRow key={m.id} data-ocid={`machines.row.${i + 1}`}>
                 <TableCell className="text-muted-foreground text-sm">
@@ -75,6 +116,9 @@ export default function MachinesTable({
                 <TableCell>{formatDate(m.doneDate)}</TableCell>
                 <TableCell>{formatDate(m.dueDate)}</TableCell>
                 <TableCell>{formatDate(m.nextCleanDate)}</TableCell>
+                <TableCell>
+                  <CountdownBadge days={days} />
+                </TableCell>
                 <TableCell>
                   <Badge variant={isOverdue ? "destructive" : "secondary"}>
                     {isOverdue ? "Overdue" : "On Track"}

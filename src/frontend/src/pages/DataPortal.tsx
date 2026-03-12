@@ -80,6 +80,25 @@ export default function DataPortal() {
     );
   };
 
+  const handleDelete = (id: string) => {
+    setMachines((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const handleMarkCleaned = (id: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    setMachines((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              doneDate: today,
+              parts: m.parts.map((p) => ({ ...p, status: "cleaned" as const })),
+            }
+          : m,
+      ),
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -205,6 +224,12 @@ export default function DataPortal() {
         open={!!detailMachine}
         onOpenChange={(o) => !o && setDetailMachine(null)}
         machine={detailMachine}
+        onReschedule={(m) => {
+          setDetailMachine(null);
+          setRescheduleMachine(m);
+        }}
+        onDelete={handleDelete}
+        onMarkCleaned={handleMarkCleaned}
       />
 
       <RescheduleDateDialog

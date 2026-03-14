@@ -26,11 +26,11 @@ function formatDate(d: string) {
   });
 }
 
-function daysUntilNextClean(nextCleanDate: string): number | null {
-  if (!nextCleanDate) return null;
+function daysUntilDue(dueDate: string): number | null {
+  if (!dueDate) return null;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const target = new Date(`${nextCleanDate}T00:00:00`);
+  const target = new Date(`${dueDate}T00:00:00`);
   target.setHours(0, 0, 0, 0);
   return Math.round(
     (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
@@ -95,7 +95,6 @@ export default function MachinesTable({
             <TableHead className="font-semibold">Machine No.</TableHead>
             <TableHead className="font-semibold">Done Date</TableHead>
             <TableHead className="font-semibold">Due Date</TableHead>
-            <TableHead className="font-semibold">Next Clean Date</TableHead>
             <TableHead className="font-semibold">Countdown</TableHead>
             <TableHead className="font-semibold">Status</TableHead>
             <TableHead className="font-semibold">Actions</TableHead>
@@ -105,7 +104,7 @@ export default function MachinesTable({
           {machines.map((m, i) => {
             const isOverdue =
               m.dueDate && new Date(`${m.dueDate}T00:00:00`) < new Date();
-            const days = daysUntilNextClean(m.nextCleanDate);
+            const days = daysUntilDue(m.dueDate);
             return (
               <TableRow key={m.id} data-ocid={`machines.row.${i + 1}`}>
                 <TableCell className="text-muted-foreground text-sm">
@@ -115,7 +114,6 @@ export default function MachinesTable({
                 <TableCell>{m.machineNo}</TableCell>
                 <TableCell>{formatDate(m.doneDate)}</TableCell>
                 <TableCell>{formatDate(m.dueDate)}</TableCell>
-                <TableCell>{formatDate(m.nextCleanDate)}</TableCell>
                 <TableCell>
                   <CountdownBadge days={days} />
                 </TableCell>

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Building2, Download, PlusCircle } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddMachineDialog, {
   type MachineRecord,
 } from "../components/AddMachineDialog";
@@ -10,6 +10,25 @@ import MachineDetailDialog from "../components/MachineDetailDialog";
 import MachineStatsWidgets from "../components/MachineStatsWidgets";
 import MachinesTable from "../components/MachinesTable";
 import RescheduleDateDialog from "../components/RescheduleDateDialog";
+
+const STORAGE_KEY = "ta_hygiene_machines";
+
+function loadMachines(): MachineRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMachines(machines: MachineRecord[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
+  } catch {
+    // ignore storage errors
+  }
+}
 
 function exportToExcel(machines: MachineRecord[]) {
   const headers = [
@@ -55,13 +74,16 @@ function exportToExcel(machines: MachineRecord[]) {
 
 export default function DataPortal() {
   const [machineDialogOpen, setMachineDialogOpen] = useState(false);
-  const [machines, setMachines] = useState<MachineRecord[]>([]);
+  const [machines, setMachines] = useState<MachineRecord[]>(loadMachines);
   const [detailMachine, setDetailMachine] = useState<MachineRecord | null>(
     null,
   );
   const [rescheduleMachine, setRescheduleMachine] =
     useState<MachineRecord | null>(null);
-  const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    saveMachines(machines);
+  }, [machines]);
 
   const handleAddMachine = (record: MachineRecord) => {
     setMachines((prev) => [...prev, record]);
@@ -71,12 +93,9 @@ export default function DataPortal() {
     id: string,
     doneDate: string,
     dueDate: string,
-    nextCleanDate: string,
   ) => {
     setMachines((prev) =>
-      prev.map((m) =>
-        m.id === id ? { ...m, doneDate, dueDate, nextCleanDate } : m,
-      ),
+      prev.map((m) => (m.id === id ? { ...m, doneDate, dueDate } : m)),
     );
   };
 
@@ -201,15 +220,7 @@ export default function DataPortal() {
         <div className="container mx-auto px-6 py-6 max-w-6xl">
           <Separator className="mb-4" />
           <p className="text-sm text-muted-foreground text-center">
-            © {currentYear}. Built with ❤️ using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              caffeine.ai
-            </a>
+            Made by Rahul Vishwakarma
           </p>
         </div>
       </footer>

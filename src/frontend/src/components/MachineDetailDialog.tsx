@@ -96,7 +96,7 @@ export default function MachineDetailDialog({
                 </p>
               </div>
             </div>
-            <DueBadge dueDate={machine.nextCleanDate || machine.dueDate} />
+            <DueBadge dueDate={machine.dueDate} />
           </div>
         </div>
 
@@ -122,7 +122,7 @@ export default function MachineDetailDialog({
                 Next Due
               </p>
               <p className="text-sm font-bold text-foreground mt-0.5">
-                {formatDate(machine.nextCleanDate || machine.dueDate)}
+                {formatDate(machine.dueDate)}
               </p>
             </div>
           </div>

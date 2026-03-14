@@ -22,7 +22,6 @@ export interface MachineRecord {
   machineNo: string;
   doneDate: string;
   dueDate: string;
-  nextCleanDate: string;
   parts: MachinePart[];
 }
 
@@ -37,7 +36,6 @@ const EMPTY = {
   machineNo: "",
   doneDate: "",
   dueDate: "",
-  nextCleanDate: "",
 };
 
 export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
@@ -62,7 +60,6 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
     if (!form.machineNo.trim()) e.machineNo = "Required";
     if (!form.doneDate) e.doneDate = "Required";
     if (!form.dueDate) e.dueDate = "Required";
-    if (!form.nextCleanDate) e.nextCleanDate = "Required";
     return e;
   };
 
@@ -116,7 +113,7 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} noValidate className="mt-2 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="machine-type" className="text-sm font-medium">
                 Machine Type <span className="text-destructive">*</span>
@@ -201,28 +198,6 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
                   data-ocid="add_machine.due_date.error_state"
                 >
                   {errors.dueDate}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="next-clean-date" className="text-sm font-medium">
-                Next Clean Date <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="next-clean-date"
-                type="date"
-                data-ocid="add_machine.next_clean_date.input"
-                value={form.nextCleanDate}
-                onChange={(e) => change("nextCleanDate", e.target.value)}
-                className={errors.nextCleanDate ? "border-destructive" : ""}
-              />
-              {errors.nextCleanDate && (
-                <p
-                  className="text-xs text-destructive"
-                  data-ocid="add_machine.next_clean_date.error_state"
-                >
-                  {errors.nextCleanDate}
                 </p>
               )}
             </div>

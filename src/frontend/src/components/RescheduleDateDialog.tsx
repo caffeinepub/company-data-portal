@@ -16,12 +16,7 @@ interface Props {
   machine: MachineRecord | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (
-    id: string,
-    doneDate: string,
-    dueDate: string,
-    nextCleanDate: string,
-  ) => void;
+  onSave: (id: string, doneDate: string, dueDate: string) => void;
 }
 
 export default function RescheduleDateDialog({
@@ -32,19 +27,15 @@ export default function RescheduleDateDialog({
 }: Props) {
   const [doneDate, setDoneDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [nextCleanDate, setNextCleanDate] = useState("");
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<{
-    doneDate?: string;
-    dueDate?: string;
-    nextCleanDate?: string;
-  }>({});
+  const [errors, setErrors] = useState<{ doneDate?: string; dueDate?: string }>(
+    {},
+  );
 
   useEffect(() => {
     if (machine) {
       setDoneDate(machine.doneDate || "");
       setDueDate(machine.dueDate || "");
-      setNextCleanDate(machine.nextCleanDate || "");
       setErrors({});
     }
   }, [machine]);
@@ -53,7 +44,6 @@ export default function RescheduleDateDialog({
     const e: typeof errors = {};
     if (!doneDate) e.doneDate = "Required";
     if (!dueDate) e.dueDate = "Required";
-    if (!nextCleanDate) e.nextCleanDate = "Required";
     return e;
   };
 
@@ -66,7 +56,7 @@ export default function RescheduleDateDialog({
     }
     setSaving(true);
     await new Promise((r) => setTimeout(r, 300));
-    onSave(machine!.id, doneDate, dueDate, nextCleanDate);
+    onSave(machine!.id, doneDate, dueDate);
     toast.success("Dates updated!", {
       description: `${machine!.machineType} #${machine!.machineNo} has been rescheduled.`,
       icon: <CalendarClock className="h-4 w-4" />,
@@ -138,31 +128,6 @@ export default function RescheduleDateDialog({
                 data-ocid="reschedule.due_date.error_state"
               >
                 {errors.dueDate}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="rs-next-clean" className="text-sm font-medium">
-              Next Clean Date <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="rs-next-clean"
-              type="date"
-              data-ocid="reschedule.next_clean_date.input"
-              value={nextCleanDate}
-              onChange={(e) => {
-                setNextCleanDate(e.target.value);
-                setErrors((p) => ({ ...p, nextCleanDate: undefined }));
-              }}
-              className={errors.nextCleanDate ? "border-destructive" : ""}
-            />
-            {errors.nextCleanDate && (
-              <p
-                className="text-xs text-destructive"
-                data-ocid="reschedule.next_clean_date.error_state"
-              >
-                {errors.nextCleanDate}
               </p>
             )}
           </div>

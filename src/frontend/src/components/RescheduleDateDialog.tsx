@@ -7,10 +7,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CalendarClock, Loader2 } from "lucide-react";
+import { CalendarClock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { MachineRecord } from "./AddMachineDialog";
+
+const RESCHEDULE_PASSWORD = "admin@1234";
 
 interface Props {
   machine: MachineRecord | null;
@@ -27,15 +29,20 @@ export default function RescheduleDateDialog({
 }: Props) {
   const [doneDate, setDoneDate] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<{ doneDate?: string; dueDate?: string }>(
-    {},
-  );
+  const [errors, setErrors] = useState<{
+    doneDate?: string;
+    dueDate?: string;
+    password?: string;
+  }>({});
 
   useEffect(() => {
     if (machine) {
       setDoneDate(machine.doneDate || "");
       setDueDate(machine.dueDate || "");
+      setPassword("");
       setErrors({});
     }
   }, [machine]);
@@ -44,6 +51,9 @@ export default function RescheduleDateDialog({
     const e: typeof errors = {};
     if (!doneDate) e.doneDate = "Required";
     if (!dueDate) e.dueDate = "Required";
+    if (!password) e.password = "Password is required";
+    else if (password !== RESCHEDULE_PASSWORD)
+      e.password = "Incorrect password";
     return e;
   };
 
@@ -98,12 +108,7 @@ export default function RescheduleDateDialog({
               className={errors.doneDate ? "border-destructive" : ""}
             />
             {errors.doneDate && (
-              <p
-                className="text-xs text-destructive"
-                data-ocid="reschedule.done_date.error_state"
-              >
-                {errors.doneDate}
-              </p>
+              <p className="text-xs text-destructive">{errors.doneDate}</p>
             )}
           </div>
 
@@ -123,11 +128,46 @@ export default function RescheduleDateDialog({
               className={errors.dueDate ? "border-destructive" : ""}
             />
             {errors.dueDate && (
+              <p className="text-xs text-destructive">{errors.dueDate}</p>
+            )}
+          </div>
+
+          {/* Password field */}
+          <div className="space-y-1.5 pt-1">
+            <Label htmlFor="rs-password" className="text-sm font-medium">
+              Password <span className="text-destructive">*</span>
+            </Label>
+            <div className="relative">
+              <Input
+                id="rs-password"
+                type={showPw ? "text" : "password"}
+                data-ocid="reschedule.password.input"
+                placeholder="Enter password to confirm"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrors((p) => ({ ...p, password: undefined }));
+                }}
+                className={`pr-10 ${errors.password ? "border-destructive" : ""}`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPw ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {errors.password && (
               <p
                 className="text-xs text-destructive"
-                data-ocid="reschedule.due_date.error_state"
+                data-ocid="reschedule.password.error_state"
               >
-                {errors.dueDate}
+                {errors.password}
               </p>
             )}
           </div>

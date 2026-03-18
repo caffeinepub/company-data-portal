@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Download, PlusCircle } from "lucide-react";
+import { Building2, Download, Loader2, PlusCircle } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
+import type { backendInterface } from "../backend.d";
 import AddMachineDialog, {
   type MachineRecord,
 } from "../components/AddMachineDialog";
@@ -10,25 +11,7 @@ import MachineDetailDialog from "../components/MachineDetailDialog";
 import MachineStatsWidgets from "../components/MachineStatsWidgets";
 import MachinesTable from "../components/MachinesTable";
 import RescheduleDateDialog from "../components/RescheduleDateDialog";
-
-const STORAGE_KEY = "ta_hygiene_machines";
-
-function loadMachines(): MachineRecord[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveMachines(machines: MachineRecord[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
-  } catch {
-    // ignore storage errors
-  }
-}
+import { useActor } from "../hooks/useActor";
 
 function exportToExcel(machines: MachineRecord[]) {
   const headers = [
@@ -73,20 +56,46 @@ function exportToExcel(machines: MachineRecord[]) {
 }
 
 export default function DataPortal() {
+  const { actor, isFetching } = useActor();
+  const backend = actor as unknown as backendInterface | null;
   const [machineDialogOpen, setMachineDialogOpen] = useState(false);
-  const [machines, setMachines] = useState<MachineRecord[]>(loadMachines);
+  const [machines, setMachines] = useState<MachineRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [detailMachine, setDetailMachine] = useState<MachineRecord | null>(
     null,
   );
   const [rescheduleMachine, setRescheduleMachine] =
     useState<MachineRecord | null>(null);
 
+  // Load machines from backend on mount
   useEffect(() => {
-    saveMachines(machines);
-  }, [machines]);
+    if (!backend || isFetching) return;
+    setLoading(true);
+    backend
+      .getAllMachines()
+      .then((records) => {
+        setMachines(records as MachineRecord[]);
+      })
+      .catch(() => {
+        // silently ignore load errors
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [backend, isFetching]);
 
   const handleAddMachine = (record: MachineRecord) => {
     setMachines((prev) => [...prev, record]);
+    backend
+      ?.addMachine(
+        record.id,
+        record.machineType,
+        record.machineNo,
+        record.doneDate,
+        record.dueDate,
+        record.parts,
+      )
+      .catch(() => {});
   };
 
   const handleRescheduleSave = (
@@ -94,28 +103,49 @@ export default function DataPortal() {
     doneDate: string,
     dueDate: string,
   ) => {
+    let updatedParts: MachineRecord["parts"] = [];
     setMachines((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, doneDate, dueDate } : m)),
+      prev.map((m) => {
+        if (m.id === id) {
+          updatedParts = m.parts;
+          return { ...m, doneDate, dueDate };
+        }
+        return m;
+      }),
     );
+    backend?.updateMachine(id, doneDate, dueDate, updatedParts).catch(() => {});
   };
 
   const handleDelete = (id: string) => {
     setMachines((prev) => prev.filter((m) => m.id !== id));
+    backend?.deleteMachine(id).catch(() => {});
   };
 
   const handleMarkCleaned = (id: string) => {
     const today = new Date().toISOString().slice(0, 10);
+    let machine: MachineRecord | undefined;
     setMachines((prev) =>
-      prev.map((m) =>
-        m.id === id
-          ? {
-              ...m,
-              doneDate: today,
-              parts: m.parts.map((p) => ({ ...p, status: "cleaned" as const })),
-            }
-          : m,
-      ),
+      prev.map((m) => {
+        if (m.id === id) {
+          machine = m;
+          return {
+            ...m,
+            doneDate: today,
+            parts: m.parts.map((p) => ({ ...p, status: "cleaned" as const })),
+          };
+        }
+        return m;
+      }),
     );
+    if (machine) {
+      const updatedParts = machine.parts.map((p) => ({
+        ...p,
+        status: "cleaned",
+      }));
+      backend
+        ?.updateMachine(id, today, machine.dueDate, updatedParts)
+        .catch(() => {});
+    }
   };
 
   return (
@@ -135,7 +165,7 @@ export default function DataPortal() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
-                src="/assets/uploads/image-1-1.png"
+                src="/assets/uploads/Screenshot-2026-03-11-135111-1.png"
                 alt="Logo"
                 className="h-14 w-14 object-contain rounded-md"
               />
@@ -205,12 +235,25 @@ export default function DataPortal() {
                 </Button>
               </div>
             </div>
-            <MachineStatsWidgets machines={machines} />
-            <MachinesTable
-              machines={machines}
-              onViewDetail={setDetailMachine}
-              onReschedule={setRescheduleMachine}
-            />
+
+            {loading ? (
+              <div
+                className="flex items-center justify-center py-16 text-muted-foreground gap-2"
+                data-ocid="machines.loading_state"
+              >
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading machines...</span>
+              </div>
+            ) : (
+              <>
+                <MachineStatsWidgets machines={machines} />
+                <MachinesTable
+                  machines={machines}
+                  onViewDetail={setDetailMachine}
+                  onReschedule={setRescheduleMachine}
+                />
+              </>
+            )}
           </div>
         </motion.div>
       </main>

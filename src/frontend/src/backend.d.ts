@@ -1,31 +1,18 @@
-import type { Principal } from "@icp-sdk/core/principal";
-export interface Some<T> {
-    __kind__: "Some";
-    value: T;
-}
-export interface None {
-    __kind__: "None";
-}
-export type Option<T> = Some<T> | None;
-export interface CompanyRecord {
-    id: RecordId;
-    value: number;
-    date: string;
+export interface MachinePart {
     name: string;
-    notes: string;
-    category: Category;
-    department: string;
+    status: string;
 }
-export type RecordId = string;
-export enum Category {
-    hr = "hr",
-    finance = "finance",
-    other = "other",
-    sales = "sales",
-    operations = "operations"
+export interface MachineRecord {
+    id: string;
+    machineType: string;
+    machineNo: string;
+    doneDate: string;
+    dueDate: string;
+    parts: MachinePart[];
 }
 export interface backendInterface {
-    addRecord(id: string, name: string, categoryText: string, department: string, date: string, value: number, notes: string): Promise<void>;
-    deleteRecord(id: RecordId): Promise<void>;
-    getAllRecords(): Promise<Array<CompanyRecord>>;
+    addMachine(id: string, machineType: string, machineNo: string, doneDate: string, dueDate: string, parts: MachinePart[]): Promise<void>;
+    getAllMachines(): Promise<MachineRecord[]>;
+    deleteMachine(id: string): Promise<void>;
+    updateMachine(id: string, doneDate: string, dueDate: string, parts: MachinePart[]): Promise<void>;
 }

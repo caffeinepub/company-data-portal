@@ -1,76 +1,74 @@
 import Map "mo:core/Map";
-import Iter "mo:core/Iter";
-import Float "mo:core/Float";
-import Text "mo:core/Text";
-import Runtime "mo:core/Runtime";
 import Array "mo:core/Array";
+import Text "mo:core/Text";
+import Float "mo:core/Float";
 
 actor {
-  type Category = {
-    #sales;
-    #hr;
-    #finance;
-    #operations;
-    #other;
-  };
-
-  module Category {
-    public func fromText(text : Text) : Category {
-      switch (text.toLower()) {
-        case ("sales") { #sales };
-        case ("hr") { #hr };
-        case ("finance") { #finance };
-        case ("operations") { #operations };
-        case ("other") { #other };
-        case (_) { Runtime.trap("Invalid category: " # text) };
-      };
-    };
-  };
-
-  type RecordId = Text;
-
-  type CompanyRecord = {
-    id : RecordId;
+  // ── Migration: preserve old stable variable so upgrade succeeds ──
+  type OldCategory = { #sales; #hr; #finance; #operations; #other };
+  type OldRecord = {
+    id : Text;
     name : Text;
-    category : Category;
+    category : OldCategory;
     department : Text;
     date : Text;
     value : Float;
     notes : Text;
   };
+  // Keep old `records` variable declared with its original type so Motoko
+  // can deserialise it on upgrade instead of raising M0169.
+  // It is intentionally unused after migration.
+  let records = Map.empty<Text, OldRecord>();
 
-  let records = Map.empty<RecordId, CompanyRecord>();
+  // ── New machine record types ──
+  type MachinePart = {
+    name : Text;
+    status : Text;
+  };
 
-  public shared ({ caller }) func addRecord(
+  type MachineRecord = {
+    id : Text;
+    machineType : Text;
+    machineNo : Text;
+    doneDate : Text;
+    dueDate : Text;
+    parts : [MachinePart];
+  };
+
+  let machines = Map.empty<Text, MachineRecord>();
+
+  public shared func addMachine(
     id : Text,
-    name : Text,
-    categoryText : Text,
-    department : Text,
-    date : Text,
-    value : Float,
-    notes : Text,
+    machineType : Text,
+    machineNo : Text,
+    doneDate : Text,
+    dueDate : Text,
+    parts : [MachinePart],
   ) : async () {
-    let category = Category.fromText(categoryText);
-    let record = {
-      id;
-      name;
-      category;
-      department;
-      date;
-      value;
-      notes;
-    };
-    records.add(id, record);
+    let record : MachineRecord = { id; machineType; machineNo; doneDate; dueDate; parts };
+    machines.add(id, record);
   };
 
-  public query ({ caller }) func getAllRecords() : async [CompanyRecord] {
-    records.values().toArray();
+  public query func getAllMachines() : async [MachineRecord] {
+    machines.values().toArray();
   };
 
-  public shared ({ caller }) func deleteRecord(id : RecordId) : async () {
-    if (not records.containsKey(id)) {
-      Runtime.trap("Record with ID " # id # " does not exist. Try adding it first.");
+  public shared func deleteMachine(id : Text) : async () {
+    machines.remove(id);
+  };
+
+  public shared func updateMachine(
+    id : Text,
+    doneDate : Text,
+    dueDate : Text,
+    parts : [MachinePart],
+  ) : async () {
+    switch (machines.get(id)) {
+      case (?existing) {
+        let updated : MachineRecord = { existing with doneDate; dueDate; parts };
+        machines.add(id, updated);
+      };
+      case null {};
     };
-    records.remove(id);
   };
 };

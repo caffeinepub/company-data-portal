@@ -7,9 +7,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Clock, Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Eye,
+  EyeOff,
+  Loader2,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+const ADD_MACHINE_PASSWORD = "admin@1234";
 
 export interface MachinePart {
   name: string;
@@ -40,8 +50,12 @@ const EMPTY = {
 
 export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
   const [form, setForm] = useState(EMPTY);
-  const [errors, setErrors] = useState<Partial<typeof EMPTY>>({});
+  const [errors, setErrors] = useState<
+    Partial<typeof EMPTY> & { password?: string }
+  >({});
   const [saving, setSaving] = useState(false);
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
 
   const [parts, setParts] = useState<MachinePart[]>([]);
   const [partName, setPartName] = useState("");
@@ -55,11 +69,14 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
   };
 
   const validate = () => {
-    const e: Partial<typeof EMPTY> = {};
+    const e: typeof errors = {};
     if (!form.machineType.trim()) e.machineType = "Required";
     if (!form.machineNo.trim()) e.machineNo = "Required";
     if (!form.doneDate) e.doneDate = "Required";
     if (!form.dueDate) e.dueDate = "Required";
+    if (!password) e.password = "Password is required";
+    else if (password !== ADD_MACHINE_PASSWORD)
+      e.password = "Incorrect password";
     return e;
   };
 
@@ -99,6 +116,7 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
     setParts([]);
     setPartName("");
     setPartStatus("cleaned");
+    setPassword("");
     setSaving(false);
     onOpenChange(false);
   };
@@ -295,6 +313,46 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
             ) : (
               <p className="text-xs text-muted-foreground italic">
                 No parts added yet. Parts are optional.
+              </p>
+            )}
+          </div>
+
+          {/* Password confirmation */}
+          <div className="space-y-1.5">
+            <Label htmlFor="add-password" className="text-sm font-medium">
+              Password <span className="text-destructive">*</span>
+            </Label>
+            <div className="relative max-w-xs">
+              <Input
+                id="add-password"
+                type={showPw ? "text" : "password"}
+                data-ocid="add_machine.password.input"
+                placeholder="Enter password to confirm"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrors((p) => ({ ...p, password: undefined }));
+                }}
+                className={`pr-10 ${errors.password ? "border-destructive" : ""}`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPw ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {errors.password && (
+              <p
+                className="text-xs text-destructive"
+                data-ocid="add_machine.password.error_state"
+              >
+                {errors.password}
               </p>
             )}
           </div>

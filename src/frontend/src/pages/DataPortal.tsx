@@ -8,7 +8,9 @@ import AddMachineDialog, {
   type MachineRecord,
 } from "../components/AddMachineDialog";
 import MachineDetailDialog from "../components/MachineDetailDialog";
-import MachineStatsWidgets from "../components/MachineStatsWidgets";
+import MachineStatsWidgets, {
+  type WidgetFilter,
+} from "../components/MachineStatsWidgets";
 import MachinesTable from "../components/MachinesTable";
 import RescheduleDateDialog from "../components/RescheduleDateDialog";
 import { useActor } from "../hooks/useActor";
@@ -66,6 +68,7 @@ export default function DataPortal() {
   );
   const [rescheduleMachine, setRescheduleMachine] =
     useState<MachineRecord | null>(null);
+  const [widgetFilter, setWidgetFilter] = useState<WidgetFilter>(null);
 
   // Load machines from backend on mount
   useEffect(() => {
@@ -76,9 +79,7 @@ export default function DataPortal() {
       .then((records) => {
         setMachines(records as MachineRecord[]);
       })
-      .catch(() => {
-        // silently ignore load errors
-      })
+      .catch(() => {})
       .finally(() => {
         setLoading(false);
       });
@@ -246,11 +247,16 @@ export default function DataPortal() {
               </div>
             ) : (
               <>
-                <MachineStatsWidgets machines={machines} />
+                <MachineStatsWidgets
+                  machines={machines}
+                  activeFilter={widgetFilter}
+                  onFilterClick={setWidgetFilter}
+                />
                 <MachinesTable
                   machines={machines}
                   onViewDetail={setDetailMachine}
                   onReschedule={setRescheduleMachine}
+                  widgetFilter={widgetFilter}
                 />
               </>
             )}

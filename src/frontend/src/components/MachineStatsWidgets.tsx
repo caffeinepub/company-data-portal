@@ -1,8 +1,12 @@
 import { Bell } from "lucide-react";
 import type { MachineRecord } from "./AddMachineDialog";
 
+export type WidgetFilter = "onSchedule" | "dueSoon" | "overdue" | null;
+
 interface Props {
   machines: MachineRecord[];
+  activeFilter?: WidgetFilter;
+  onFilterClick?: (filter: WidgetFilter) => void;
 }
 
 function getDaysUntil(dateStr: string): number | null {
@@ -16,7 +20,11 @@ function getDaysUntil(dateStr: string): number | null {
   );
 }
 
-export default function MachineStatsWidgets({ machines }: Props) {
+export default function MachineStatsWidgets({
+  machines,
+  activeFilter,
+  onFilterClick,
+}: Props) {
   const total = machines.length;
 
   const overdue = machines.filter((m) => {
@@ -39,6 +47,11 @@ export default function MachineStatsWidgets({ machines }: Props) {
     return days !== null && days > 7;
   }).length;
 
+  const handleClick = (filter: WidgetFilter) => {
+    if (!onFilterClick) return;
+    onFilterClick(activeFilter === filter ? null : filter);
+  };
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {/* Total */}
@@ -50,21 +63,43 @@ export default function MachineStatsWidgets({ machines }: Props) {
       </div>
 
       {/* On Schedule */}
-      <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={() => handleClick("onSchedule")}
+        className={`rounded-xl border p-4 flex flex-col gap-1 cursor-pointer transition-all text-left ${
+          activeFilter === "onSchedule"
+            ? "border-green-500 bg-green-50 dark:bg-green-950/30 ring-2 ring-green-400"
+            : "border-border bg-card hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-950/10"
+        }`}
+      >
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           On Schedule
         </p>
         <p className="text-3xl font-bold text-green-600">{onSchedule}</p>
-      </div>
+        {activeFilter === "onSchedule" && (
+          <p className="text-[10px] text-green-600 font-medium">Filtered ✓</p>
+        )}
+      </button>
 
       {/* Due Soon */}
-      <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={() => handleClick("dueSoon")}
+        className={`rounded-xl border p-4 flex flex-col gap-1 cursor-pointer transition-all text-left ${
+          activeFilter === "dueSoon"
+            ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30 ring-2 ring-yellow-400"
+            : "border-border bg-card hover:border-yellow-400 hover:bg-yellow-50/50 dark:hover:bg-yellow-950/10"
+        }`}
+      >
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Due Soon
         </p>
         <p className="text-3xl font-bold text-yellow-600">{dueSoon}</p>
         <p className="text-[10px] text-muted-foreground">Within 7 days</p>
-      </div>
+        {activeFilter === "dueSoon" && (
+          <p className="text-[10px] text-yellow-600 font-medium">Filtered ✓</p>
+        )}
+      </button>
 
       {/* Due Today */}
       <div
@@ -103,12 +138,23 @@ export default function MachineStatsWidgets({ machines }: Props) {
       </div>
 
       {/* Cleaning Overdue */}
-      <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={() => handleClick("overdue")}
+        className={`rounded-xl border p-4 flex flex-col gap-1 cursor-pointer transition-all text-left ${
+          activeFilter === "overdue"
+            ? "border-red-500 bg-red-50 dark:bg-red-950/30 ring-2 ring-red-400"
+            : "border-border bg-card hover:border-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/10"
+        }`}
+      >
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Cleaning Overdue
         </p>
         <p className="text-3xl font-bold text-red-600">{overdue}</p>
-      </div>
+        {activeFilter === "overdue" && (
+          <p className="text-[10px] text-red-600 font-medium">Filtered ✓</p>
+        )}
+      </button>
     </div>
   );
 }

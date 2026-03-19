@@ -12,11 +12,13 @@ import {
 import { CalendarClock, Eye, Search, X } from "lucide-react";
 import { useState } from "react";
 import type { MachineRecord } from "./AddMachineDialog";
+import type { WidgetFilter } from "./MachineStatsWidgets";
 
 interface Props {
   machines: MachineRecord[];
   onViewDetail: (machine: MachineRecord) => void;
   onReschedule: (machine: MachineRecord) => void;
+  widgetFilter?: WidgetFilter;
 }
 
 function formatDate(d: string) {
@@ -67,23 +69,59 @@ function CountdownBadge({ days }: { days: number | null }) {
   );
 }
 
+function applyWidgetFilter(
+  machines: MachineRecord[],
+  filter: WidgetFilter,
+): MachineRecord[] {
+  if (!filter) return machines;
+  return machines.filter((m) => {
+    const days = daysUntilDue(m.dueDate);
+    if (filter === "onSchedule") return days !== null && days > 7;
+    if (filter === "dueSoon") return days !== null && days >= 0 && days <= 7;
+    if (filter === "overdue") return days !== null && days < 0;
+    return true;
+  });
+}
+
+const FILTER_LABELS: Record<NonNullable<WidgetFilter>, string> = {
+  onSchedule: "On Schedule",
+  dueSoon: "Due Soon",
+  overdue: "Cleaning Overdue",
+};
+
 export default function MachinesTable({
   machines,
   onViewDetail,
   onReschedule,
+  widgetFilter,
 }: Props) {
   const [search, setSearch] = useState("");
 
+  const afterWidgetFilter = applyWidgetFilter(machines, widgetFilter ?? null);
+
   const filtered = search.trim()
-    ? machines.filter(
+    ? afterWidgetFilter.filter(
         (m) =>
           m.machineType.toLowerCase().includes(search.toLowerCase()) ||
           m.machineNo.toLowerCase().includes(search.toLowerCase()),
       )
-    : machines;
+    : afterWidgetFilter;
 
   return (
     <div className="space-y-3">
+      {/* Active filter label */}
+      {widgetFilter && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Showing:</span>
+          <Badge variant="outline" className="font-semibold">
+            {FILTER_LABELS[widgetFilter]}
+          </Badge>
+          <span className="text-muted-foreground text-xs">
+            (click the widget again to clear)
+          </span>
+        </div>
+      )}
+
       {/* Search bar */}
       <div className="relative max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />

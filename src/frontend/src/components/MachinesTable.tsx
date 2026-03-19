@@ -78,6 +78,7 @@ function applyWidgetFilter(
     const days = daysUntilDue(m.dueDate);
     if (filter === "onSchedule") return days !== null && days > 7;
     if (filter === "dueSoon") return days !== null && days >= 0 && days <= 7;
+    if (filter === "dueToday") return days === 0;
     if (filter === "overdue") return days !== null && days < 0;
     return true;
   });
@@ -86,6 +87,7 @@ function applyWidgetFilter(
 const FILTER_LABELS: Record<NonNullable<WidgetFilter>, string> = {
   onSchedule: "On Schedule",
   dueSoon: "Due Soon",
+  dueToday: "Due Today",
   overdue: "Cleaning Overdue",
 };
 

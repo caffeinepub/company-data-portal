@@ -1,18 +1,40 @@
+import type { Principal } from "@icp-sdk/core/principal";
+export interface Some<T> {
+    __kind__: "Some";
+    value: T;
+}
+export interface None {
+    __kind__: "None";
+}
+export type Option<T> = Some<T> | None;
 export interface MachinePart {
-    name: string;
     status: string;
+    name: string;
+}
+export interface MGCRecord {
+    id: string;
+    status: string;
+    gearName: string;
+    dueDate: string;
+    calibrationDate: string;
+    gearNo: string;
+    remarks: string;
 }
 export interface MachineRecord {
     id: string;
-    machineType: string;
-    machineNo: string;
-    doneDate: string;
     dueDate: string;
-    parts: MachinePart[];
+    doneDate: string;
+    parts: Array<MachinePart>;
+    machineNo: string;
+    machineType: string;
 }
 export interface backendInterface {
-    addMachine(id: string, machineType: string, machineNo: string, doneDate: string, dueDate: string, parts: MachinePart[]): Promise<void>;
-    getAllMachines(): Promise<MachineRecord[]>;
+    addMGCRecord(id: string, gearName: string, gearNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
+    addMachine(id: string, machineType: string, machineNo: string, doneDate: string, dueDate: string, parts: Array<MachinePart>): Promise<void>;
+    deleteMGCRecord(id: string): Promise<void>;
     deleteMachine(id: string): Promise<void>;
-    updateMachine(id: string, doneDate: string, dueDate: string, parts: MachinePart[]): Promise<void>;
+    getAllMGCRecords(): Promise<Array<MGCRecord>>;
+    getAllMachines(): Promise<Array<MachineRecord>>;
+    updateMGCRecord(id: string, gearName: string, gearNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
+    updateMachine(id: string, doneDate: string, dueDate: string, parts: Array<MachinePart>): Promise<void>;
 }

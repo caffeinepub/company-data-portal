@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Download, Loader2, PlusCircle } from "lucide-react";
+import { Building2, Download, Loader2, Plus } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import type { backendInterface } from "../backend.d";
@@ -57,7 +57,11 @@ function exportToExcel(machines: MachineRecord[]) {
   URL.revokeObjectURL(url);
 }
 
-export default function DataPortal() {
+interface DataPortalProps {
+  onNavigateMGC: () => void;
+}
+
+export default function DataPortal({ onNavigateMGC }: DataPortalProps) {
   const { actor, isFetching } = useActor();
   const backend = actor as unknown as backendInterface | null;
   const [machineDialogOpen, setMachineDialogOpen] = useState(false);
@@ -122,6 +126,18 @@ export default function DataPortal() {
     backend?.deleteMachine(id).catch(() => {});
   };
 
+  const handleEdit = (updated: MachineRecord) => {
+    setMachines((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+    backend
+      ?.updateMachine(
+        updated.id,
+        updated.doneDate,
+        updated.dueDate,
+        updated.parts,
+      )
+      .catch(() => {});
+  };
+
   const handleMarkCleaned = (id: string) => {
     const today = new Date().toISOString().slice(0, 10);
     let machine: MachineRecord | undefined;
@@ -179,18 +195,16 @@ export default function DataPortal() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button
-                variant="default"
+                data-ocid="nav.mgc.button"
+                onClick={onNavigateMGC}
                 size="sm"
-                data-ocid="header.add_machine.open_modal_button"
-                onClick={() => setMachineDialogOpen(true)}
-                className="flex items-center gap-2"
+                className="bg-teal-600 hover:bg-teal-700 text-white font-semibold"
               >
-                <PlusCircle className="h-4 w-4" />
-                Add Machine
+                MGC
               </Button>
-              <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="flex items-center gap-2 text-muted-foreground ml-2">
                 <Building2 className="h-4 w-4" />
                 <span className="text-sm font-medium hidden sm:block">
                   Enterprise Suite
@@ -223,16 +237,6 @@ export default function DataPortal() {
                 >
                   <Download className="h-4 w-4" />
                   Export Excel
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-ocid="machines.add_machine.open_modal_button"
-                  onClick={() => setMachineDialogOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  Add Machine
                 </Button>
               </div>
             </div>
@@ -274,6 +278,21 @@ export default function DataPortal() {
         </div>
       </footer>
 
+      {/* Floating Add Machine Button */}
+      <motion.button
+        data-ocid="fab.add_machine.button"
+        onClick={() => setMachineDialogOpen(true)}
+        className="fixed bottom-8 right-8 z-50 flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        whileHover={{ scale: 1.06 }}
+        whileTap={{ scale: 0.96 }}
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <Plus className="h-5 w-5" />
+        Add Machine
+      </motion.button>
+
       <AddMachineDialog
         open={machineDialogOpen}
         onOpenChange={setMachineDialogOpen}
@@ -290,6 +309,7 @@ export default function DataPortal() {
         }}
         onDelete={handleDelete}
         onMarkCleaned={handleMarkCleaned}
+        onEdit={handleEdit}
       />
 
       <RescheduleDateDialog

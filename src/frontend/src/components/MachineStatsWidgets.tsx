@@ -1,7 +1,12 @@
 import { Bell } from "lucide-react";
 import type { MachineRecord } from "./AddMachineDialog";
 
-export type WidgetFilter = "onSchedule" | "dueSoon" | "overdue" | null;
+export type WidgetFilter =
+  | "onSchedule"
+  | "dueSoon"
+  | "dueToday"
+  | "overdue"
+  | null;
 
 interface Props {
   machines: MachineRecord[];
@@ -102,13 +107,17 @@ export default function MachineStatsWidgets({
       </button>
 
       {/* Due Today */}
-      <div
-        className={`rounded-xl border p-4 flex flex-col gap-1 transition-colors ${
-          dueToday > 0
-            ? "bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700"
-            : "border-border bg-card"
-        }`}
+      <button
+        type="button"
+        onClick={() => handleClick("dueToday")}
         data-ocid="stats.due_today.card"
+        className={`rounded-xl border p-4 flex flex-col gap-1 cursor-pointer transition-all text-left ${
+          activeFilter === "dueToday"
+            ? "border-amber-500 bg-amber-100 dark:bg-amber-950/40 ring-2 ring-amber-400"
+            : dueToday > 0
+              ? "bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700 hover:border-amber-400"
+              : "border-border bg-card hover:border-amber-300"
+        }`}
       >
         <div className="flex items-center gap-1.5">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -135,7 +144,10 @@ export default function MachineStatsWidgets({
             </span>
           )}
         </div>
-      </div>
+        {activeFilter === "dueToday" && (
+          <p className="text-[10px] text-amber-600 font-medium">Filtered ✓</p>
+        )}
+      </button>
 
       {/* Cleaning Overdue */}
       <button

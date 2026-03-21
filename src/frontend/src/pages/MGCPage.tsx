@@ -48,7 +48,7 @@ const GEAR_TYPES = [
   "3rd gear IS",
   "4th gear IS",
   "Ri Dears IS",
-  "Gears and LS 78",
+  "Gears, LS 78",
   "LS 65",
 ];
 

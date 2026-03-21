@@ -27,6 +27,7 @@ import {
 import {
   ArrowLeft,
   Bell,
+  Calendar,
   Download,
   Loader2,
   Plus,
@@ -311,6 +312,15 @@ export default function MGCPage({ onBack }: MGCPageProps) {
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
 
+  // Reschedule state
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  const [rescheduleCalibrationDate, setRescheduleCalibrationDate] =
+    useState("");
+  const [rescheduleDueDate, setRescheduleDueDate] = useState("");
+  const [reschedulePassword, setReschedulePassword] = useState("");
+  const [rescheduleError, setRescheduleError] = useState("");
+  const [rescheduling, setRescheduling] = useState(false);
+
   useEffect(() => {
     if (!backend || isFetching) return;
     setLoading(true);
@@ -378,6 +388,38 @@ export default function MGCPage({ onBack }: MGCPageProps) {
     setDeleteId(null);
     setDeletePassword("");
     setDeleting(false);
+  };
+
+  const handleReschedule = async () => {
+    setRescheduleError("");
+    if (!rescheduleCalibrationDate || !rescheduleDueDate) {
+      setRescheduleError("Please fill in both dates.");
+      return;
+    }
+    if (reschedulePassword !== PASSWORD) {
+      setRescheduleError("Incorrect password.");
+      return;
+    }
+    if (!rescheduleId) return;
+    setRescheduling(true);
+    const id = rescheduleId;
+    const newCalDate = rescheduleCalibrationDate;
+    const newDueDate = rescheduleDueDate;
+    setRecords((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? { ...r, calibrationDate: newCalDate, dueDate: newDueDate }
+          : r,
+      ),
+    );
+    (backend as any)
+      ?.updateMGCRecord?.(id, newCalDate, newDueDate)
+      .catch(() => {});
+    setRescheduleId(null);
+    setRescheduleCalibrationDate("");
+    setRescheduleDueDate("");
+    setReschedulePassword("");
+    setRescheduling(false);
   };
 
   // Apply widget filter
@@ -564,6 +606,9 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                           <TableHead className="font-semibold">
                             Remarks
                           </TableHead>
+                          <TableHead className="font-semibold w-24">
+                            Reschedule
+                          </TableHead>
                           <TableHead className="font-semibold w-20">
                             Delete
                           </TableHead>
@@ -595,6 +640,106 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                             <TableCell className="text-muted-foreground text-sm">
                               {rec.remarks || "-"}
                             </TableCell>
+
+                            {/* Reschedule cell */}
+                            <TableCell>
+                              {rescheduleId === rec.id ? (
+                                <div className="flex flex-col gap-1 min-w-[200px]">
+                                  <Input
+                                    type="date"
+                                    value={rescheduleCalibrationDate}
+                                    onChange={(e) =>
+                                      setRescheduleCalibrationDate(
+                                        e.target.value,
+                                      )
+                                    }
+                                    data-ocid={`mgc.reschedule.input.${idx + 1}`}
+                                    className="h-7 text-xs"
+                                    title="Calibration Date"
+                                  />
+                                  <Input
+                                    type="date"
+                                    value={rescheduleDueDate}
+                                    onChange={(e) =>
+                                      setRescheduleDueDate(e.target.value)
+                                    }
+                                    className="h-7 text-xs"
+                                    title="Due Date"
+                                  />
+                                  <Input
+                                    type="password"
+                                    placeholder="Password"
+                                    value={reschedulePassword}
+                                    onChange={(e) =>
+                                      setReschedulePassword(e.target.value)
+                                    }
+                                    className="h-7 text-xs"
+                                  />
+                                  {rescheduleError && (
+                                    <p
+                                      className="text-xs text-red-600"
+                                      data-ocid="mgc.reschedule.error_state"
+                                    >
+                                      {rescheduleError}
+                                    </p>
+                                  )}
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      onClick={handleReschedule}
+                                      disabled={rescheduling}
+                                      data-ocid={`mgc.reschedule.confirm_button.${idx + 1}`}
+                                      className="h-7 text-xs px-2 bg-teal-600 hover:bg-teal-700 text-white"
+                                    >
+                                      {rescheduling ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        "Confirm"
+                                      )}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setRescheduleId(null);
+                                        setRescheduleCalibrationDate("");
+                                        setRescheduleDueDate("");
+                                        setReschedulePassword("");
+                                        setRescheduleError("");
+                                      }}
+                                      data-ocid="mgc.reschedule.cancel_button"
+                                      className="h-7 text-xs px-2"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setRescheduleId(rec.id);
+                                    setRescheduleCalibrationDate(
+                                      rec.calibrationDate || "",
+                                    );
+                                    setRescheduleDueDate(rec.dueDate || "");
+                                    setReschedulePassword("");
+                                    setRescheduleError("");
+                                    // Clear delete if open
+                                    setDeleteId(null);
+                                    setDeletePassword("");
+                                    setDeleteError("");
+                                  }}
+                                  data-ocid={`mgc.reschedule.button.${idx + 1}`}
+                                  className="text-teal-600 hover:text-teal-800 hover:bg-teal-50"
+                                >
+                                  <Calendar className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+
+                            {/* Delete cell */}
                             <TableCell>
                               {deleteId === rec.id ? (
                                 <div className="flex flex-col gap-1 min-w-[160px]">
@@ -654,6 +799,12 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                                     setDeleteId(rec.id);
                                     setDeleteError("");
                                     setDeletePassword("");
+                                    // Clear reschedule if open
+                                    setRescheduleId(null);
+                                    setRescheduleCalibrationDate("");
+                                    setRescheduleDueDate("");
+                                    setReschedulePassword("");
+                                    setRescheduleError("");
                                   }}
                                   data-ocid={`mgc.delete_button.${idx + 1}`}
                                   className="text-red-500 hover:text-red-700 hover:bg-red-50"

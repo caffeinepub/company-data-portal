@@ -1,12 +1,9 @@
 import Map "mo:core/Map";
-import Array "mo:core/Array";
 import Text "mo:core/Text";
 import Float "mo:core/Float";
 
-
-
 actor {
-  // ── Migration: preserve old stable variable so upgrade succeeds ──
+  // ── Legacy migration variables ──────────────────────────────────────────
   type OldCategory = { #sales; #hr; #finance; #operations; #other };
   type OldRecord = {
     id : Text;
@@ -17,16 +14,24 @@ actor {
     value : Float;
     notes : Text;
   };
-  // Keep old `records` variable declared with its original type so Motoko
-  // can deserialise it on upgrade instead of raising M0169.
-  // It is intentionally unused after migration.
   let records = Map.empty<Text, OldRecord>();
 
-  // ── New machine record types ──
-  type MachinePart = {
-    name : Text;
+  // Old MGCRecord shape (no gearType / partSerialNo).
+  // Keep this variable with the OLD name and OLD type so that Motoko can
+  // deserialise the on-disk data from the previous canister version.
+  type OldMGCRecord = {
+    id : Text;
+    gearName : Text;
+    gearNo : Text;
+    calibrationDate : Text;
+    dueDate : Text;
     status : Text;
+    remarks : Text;
   };
+  let mgcRecords = Map.empty<Text, OldMGCRecord>();
+
+  // ── Current types ────────────────────────────────────────────────────────
+  type MachinePart = { name : Text; status : Text };
 
   type MachineRecord = {
     id : Text;
@@ -37,11 +42,12 @@ actor {
     parts : [MachinePart];
   };
 
-  // New MGC record type
   type MGCRecord = {
     id : Text;
     gearName : Text;
     gearNo : Text;
+    gearType : Text;
+    partSerialNo : Text;
     calibrationDate : Text;
     dueDate : Text;
     status : Text;
@@ -49,10 +55,31 @@ actor {
   };
 
   let machines = Map.empty<Text, MachineRecord>();
-  let mgcRecords = Map.empty<Text, MGCRecord>();
 
-  // Machine record methods
-  public shared ({ caller }) func addMachine(
+  // New stable storage for MGC records (V2 with gearType + partSerialNo).
+  let mgcRecordsV2 = Map.empty<Text, MGCRecord>();
+
+  // Migrate old records into V2 on every init/upgrade (idempotent).
+  system func postupgrade() {
+    for ((k, old) in mgcRecords.entries()) {
+      if (mgcRecordsV2.get(k) == null) {
+        mgcRecordsV2.add(k, {
+          id = old.id;
+          gearName = old.gearName;
+          gearNo = old.gearNo;
+          gearType = "";
+          partSerialNo = "";
+          calibrationDate = old.calibrationDate;
+          dueDate = old.dueDate;
+          status = old.status;
+          remarks = old.remarks;
+        });
+      };
+    };
+  };
+
+  // ── Machine methods ──────────────────────────────────────────────────────
+  public shared func addMachine(
     id : Text,
     machineType : Text,
     machineNo : Text,
@@ -60,19 +87,18 @@ actor {
     dueDate : Text,
     parts : [MachinePart],
   ) : async () {
-    let record : MachineRecord = { id; machineType; machineNo; doneDate; dueDate; parts };
-    machines.add(id, record);
+    machines.add(id, { id; machineType; machineNo; doneDate; dueDate; parts });
   };
 
-  public query ({ caller }) func getAllMachines() : async [MachineRecord] {
+  public query func getAllMachines() : async [MachineRecord] {
     machines.values().toArray();
   };
 
-  public shared ({ caller }) func deleteMachine(id : Text) : async () {
+  public shared func deleteMachine(id : Text) : async () {
     machines.remove(id);
   };
 
-  public shared ({ caller }) func updateMachine(
+  public shared func updateMachine(
     id : Text,
     doneDate : Text,
     dueDate : Text,
@@ -80,64 +106,56 @@ actor {
   ) : async () {
     switch (machines.get(id)) {
       case (?existing) {
-        let updated : MachineRecord = { existing with doneDate; dueDate; parts };
-        machines.add(id, updated);
+        machines.add(id, { existing with doneDate; dueDate; parts });
       };
       case null {};
     };
   };
 
-  // MGC record methods
-  public shared ({ caller }) func addMGCRecord(
+  // ── MGC methods (use mgcRecordsV2) ───────────────────────────────────────
+  public shared func addMGCRecord(
     id : Text,
     gearName : Text,
     gearNo : Text,
+    gearType : Text,
+    partSerialNo : Text,
     calibrationDate : Text,
     dueDate : Text,
     status : Text,
     remarks : Text,
   ) : async () {
-    let record : MGCRecord = {
-      id;
-      gearName;
-      gearNo;
-      calibrationDate;
-      dueDate;
-      status;
-      remarks;
-    };
-    mgcRecords.add(id, record);
+    mgcRecordsV2.add(id, {
+      id; gearName; gearNo; gearType; partSerialNo;
+      calibrationDate; dueDate; status; remarks;
+    });
   };
 
-  public query ({ caller }) func getAllMGCRecords() : async [MGCRecord] {
-    mgcRecords.values().toArray();
+  public query func getAllMGCRecords() : async [MGCRecord] {
+    mgcRecordsV2.values().toArray();
   };
 
-  public shared ({ caller }) func deleteMGCRecord(id : Text) : async () {
-    mgcRecords.remove(id);
+  public shared func deleteMGCRecord(id : Text) : async () {
+    mgcRecordsV2.remove(id);
   };
 
-  public shared ({ caller }) func updateMGCRecord(
+  public shared func updateMGCRecord(
     id : Text,
     gearName : Text,
     gearNo : Text,
+    gearType : Text,
+    partSerialNo : Text,
     calibrationDate : Text,
     dueDate : Text,
     status : Text,
     remarks : Text,
   ) : async () {
-    switch (mgcRecords.get(id)) {
+    switch (mgcRecordsV2.get(id)) {
       case (?existing) {
-        let updated : MGCRecord = {
-          id;
-          gearName;
-          gearNo;
-          calibrationDate;
-          dueDate;
-          status;
-          remarks;
-        };
-        mgcRecords.add(id, updated);
+        mgcRecordsV2.add(id, {
+          existing with
+          gearName; gearNo; gearType; partSerialNo;
+          calibrationDate; dueDate; status; remarks;
+        });
       };
       case null {};
     };

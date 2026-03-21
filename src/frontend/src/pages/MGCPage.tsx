@@ -42,6 +42,16 @@ import { useActor } from "../hooks/useActor";
 
 const PASSWORD = "admin@1234";
 
+const GEAR_TYPES = [
+  "1st gear IS",
+  "2nd gear IS",
+  "3rd gear IS",
+  "4th gear IS",
+  "Ri Dears IS",
+  "LS 75",
+  "LS 65",
+];
+
 type WidgetFilter = "onSchedule" | "dueSoon" | "dueToday" | "overdue" | null;
 
 interface MGCPageProps {
@@ -57,6 +67,13 @@ function getDaysUntil(dateStr: string): number | null {
   return Math.round(
     (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
   );
+}
+
+function addMonthsToDate(dateStr: string, months: number): string {
+  if (!dateStr) return "";
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
 }
 
 function CountdownBadge({ days }: { days: number | null }) {
@@ -136,7 +153,6 @@ function MGCStatsWidgets({
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      {/* Total */}
       <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Total Gears
@@ -144,7 +160,6 @@ function MGCStatsWidgets({
         <p className="text-3xl font-bold text-foreground">{total}</p>
       </div>
 
-      {/* On Schedule */}
       <button
         type="button"
         onClick={() => handle("onSchedule")}
@@ -163,7 +178,6 @@ function MGCStatsWidgets({
         )}
       </button>
 
-      {/* Due Soon */}
       <button
         type="button"
         onClick={() => handle("dueSoon")}
@@ -183,7 +197,6 @@ function MGCStatsWidgets({
         )}
       </button>
 
-      {/* Due Today */}
       <button
         type="button"
         onClick={() => handle("dueToday")}
@@ -223,7 +236,6 @@ function MGCStatsWidgets({
         )}
       </button>
 
-      {/* Calibration Overdue */}
       <button
         type="button"
         onClick={() => handle("overdue")}
@@ -257,6 +269,8 @@ function exportMGCToExcel(records: MGCRecord[]) {
     "#",
     "Gear Name",
     "Gear No.",
+    "Gear Type",
+    "Part Serial No.",
     "Calibration Date",
     "Due Date",
     "Status",
@@ -266,6 +280,8 @@ function exportMGCToExcel(records: MGCRecord[]) {
     i + 1,
     r.gearName,
     r.gearNo,
+    r.gearType || "-",
+    r.partSerialNo || "-",
     r.calibrationDate || "-",
     r.dueDate || "-",
     r.status,
@@ -298,7 +314,10 @@ export default function MGCPage({ onBack }: MGCPageProps) {
   // Form state
   const [gearName, setGearName] = useState("");
   const [gearNo, setGearNo] = useState("");
+  const [gearType, setGearType] = useState("");
+  const [partSerialNo, setPartSerialNo] = useState("");
   const [calibrationDate, setCalibrationDate] = useState("");
+  const [monthType, setMonthType] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState("Calibrated");
   const [remarks, setRemarks] = useState("");
@@ -320,6 +339,22 @@ export default function MGCPage({ onBack }: MGCPageProps) {
   const [reschedulePassword, setReschedulePassword] = useState("");
   const [rescheduleError, setRescheduleError] = useState("");
   const [rescheduling, setRescheduling] = useState(false);
+
+  const handleMonthTypeChange = (val: string) => {
+    setMonthType(val);
+    if (calibrationDate) {
+      const months = val === "6month" ? 6 : 12;
+      setDueDate(addMonthsToDate(calibrationDate, months));
+    }
+  };
+
+  const handleCalibrationDateChange = (val: string) => {
+    setCalibrationDate(val);
+    if (monthType && val) {
+      const months = monthType === "6month" ? 6 : 12;
+      setDueDate(addMonthsToDate(val, months));
+    }
+  };
 
   useEffect(() => {
     if (!backend || isFetching) return;
@@ -347,6 +382,8 @@ export default function MGCPage({ onBack }: MGCPageProps) {
       id,
       gearName,
       gearNo,
+      gearType,
+      partSerialNo,
       calibrationDate,
       dueDate,
       status,
@@ -358,6 +395,8 @@ export default function MGCPage({ onBack }: MGCPageProps) {
         id,
         gearName,
         gearNo,
+        gearType,
+        partSerialNo,
         calibrationDate,
         dueDate,
         status,
@@ -366,7 +405,10 @@ export default function MGCPage({ onBack }: MGCPageProps) {
       .catch(() => {});
     setGearName("");
     setGearNo("");
+    setGearType("");
+    setPartSerialNo("");
     setCalibrationDate("");
+    setMonthType("");
     setDueDate("");
     setStatus("Calibrated");
     setRemarks("");
@@ -405,6 +447,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
     const id = rescheduleId;
     const newCalDate = rescheduleCalibrationDate;
     const newDueDate = rescheduleDueDate;
+    const rec = records.find((r) => r.id === id);
     setRecords((prev) =>
       prev.map((r) =>
         r.id === id
@@ -412,9 +455,21 @@ export default function MGCPage({ onBack }: MGCPageProps) {
           : r,
       ),
     );
-    (backend as any)
-      ?.updateMGCRecord?.(id, newCalDate, newDueDate)
-      .catch(() => {});
+    if (rec) {
+      backend
+        ?.updateMGCRecord(
+          id,
+          rec.gearName,
+          rec.gearNo,
+          rec.gearType || "",
+          rec.partSerialNo || "",
+          newCalDate,
+          newDueDate,
+          rec.status,
+          rec.remarks,
+        )
+        .catch(() => {});
+    }
     setRescheduleId(null);
     setRescheduleCalibrationDate("");
     setRescheduleDueDate("");
@@ -422,7 +477,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
     setRescheduling(false);
   };
 
-  // Apply widget filter
   const afterWidgetFilter = widgetFilter
     ? records.filter((r) => {
         const d = getDaysUntil(r.dueDate);
@@ -444,7 +498,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="relative overflow-hidden border-b border-border bg-card">
         <div
           className="absolute inset-0 opacity-20"
@@ -524,7 +577,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                   onFilterClick={setWidgetFilter}
                 />
 
-                {/* Active filter label */}
                 {widgetFilter && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-muted-foreground">Showing:</span>
@@ -537,7 +589,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                   </div>
                 )}
 
-                {/* Search bar */}
                 <div className="relative max-w-xs">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
@@ -558,7 +609,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                   )}
                 </div>
 
-                {/* Table */}
                 {records.length === 0 ? (
                   <div
                     data-ocid="mgc.empty_state"
@@ -578,7 +628,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                   </div>
                 ) : (
                   <div
-                    className="rounded-lg border border-border overflow-hidden"
+                    className="rounded-lg border border-border overflow-hidden overflow-x-auto"
                     data-ocid="mgc.table"
                   >
                     <Table>
@@ -590,6 +640,12 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                           </TableHead>
                           <TableHead className="font-semibold">
                             Gear No.
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Gear Type
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Part Serial No.
                           </TableHead>
                           <TableHead className="font-semibold">
                             Calibration Date
@@ -627,6 +683,8 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                               {rec.gearName}
                             </TableCell>
                             <TableCell>{rec.gearNo}</TableCell>
+                            <TableCell>{rec.gearType || "-"}</TableCell>
+                            <TableCell>{rec.partSerialNo || "-"}</TableCell>
                             <TableCell>{rec.calibrationDate || "-"}</TableCell>
                             <TableCell>{rec.dueDate || "-"}</TableCell>
                             <TableCell>
@@ -641,7 +699,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                               {rec.remarks || "-"}
                             </TableCell>
 
-                            {/* Reschedule cell */}
                             <TableCell>
                               {rescheduleId === rec.id ? (
                                 <div className="flex flex-col gap-1 min-w-[200px]">
@@ -726,7 +783,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                                     setRescheduleDueDate(rec.dueDate || "");
                                     setReschedulePassword("");
                                     setRescheduleError("");
-                                    // Clear delete if open
                                     setDeleteId(null);
                                     setDeletePassword("");
                                     setDeleteError("");
@@ -739,7 +795,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                               )}
                             </TableCell>
 
-                            {/* Delete cell */}
                             <TableCell>
                               {deleteId === rec.id ? (
                                 <div className="flex flex-col gap-1 min-w-[160px]">
@@ -799,7 +854,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                                     setDeleteId(rec.id);
                                     setDeleteError("");
                                     setDeletePassword("");
-                                    // Clear reschedule if open
                                     setRescheduleId(null);
                                     setRescheduleCalibrationDate("");
                                     setRescheduleDueDate("");
@@ -825,7 +879,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
         </motion.div>
       </main>
 
-      {/* Footer */}
       <footer className="mt-16 border-t border-border">
         <div className="container mx-auto px-6 py-6 max-w-6xl">
           <Separator className="mb-4" />
@@ -835,7 +888,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
         </div>
       </footer>
 
-      {/* Floating Add Button */}
       <motion.button
         data-ocid="fab.add_mgc.button"
         onClick={() => setAddOpen(true)}
@@ -849,7 +901,6 @@ export default function MGCPage({ onBack }: MGCPageProps) {
         <Plus className="h-5 w-5" /> Add MGC
       </motion.button>
 
-      {/* Add MGC Dialog */}
       <Dialog
         open={addOpen}
         onOpenChange={(o) => {
@@ -886,14 +937,51 @@ export default function MGCPage({ onBack }: MGCPageProps) {
               />
             </div>
             <div className="space-y-1">
+              <Label htmlFor="gearType">Gear Type</Label>
+              <Select value={gearType} onValueChange={setGearType}>
+                <SelectTrigger data-ocid="mgc.geartype.select" id="gearType">
+                  <SelectValue placeholder="Select gear type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GEAR_TYPES.map((gt) => (
+                    <SelectItem key={gt} value={gt}>
+                      {gt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="partSerialNo">Part Serial No.</Label>
+              <Input
+                id="partSerialNo"
+                data-ocid="mgc.partserialno.input"
+                value={partSerialNo}
+                onChange={(e) => setPartSerialNo(e.target.value)}
+                placeholder="e.g. SN-12345"
+              />
+            </div>
+            <div className="space-y-1">
               <Label htmlFor="calibrationDate">Calibration Date *</Label>
               <Input
                 id="calibrationDate"
                 data-ocid="mgc.calibrationdate.input"
                 type="date"
                 value={calibrationDate}
-                onChange={(e) => setCalibrationDate(e.target.value)}
+                onChange={(e) => handleCalibrationDateChange(e.target.value)}
               />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="monthType">Month Type</Label>
+              <Select value={monthType} onValueChange={handleMonthTypeChange}>
+                <SelectTrigger data-ocid="mgc.monthtype.select" id="monthType">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="6month">6 Month</SelectItem>
+                  <SelectItem value="1year">1 Year</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="dueDate">Due Date *</Label>
@@ -918,7 +1006,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 sm:col-span-2">
               <Label htmlFor="remarks">Remarks</Label>
               <Input
                 id="remarks"

@@ -17,8 +17,6 @@ actor {
   let records = Map.empty<Text, OldRecord>();
 
   // Old MGCRecord shape (no gearType / partSerialNo).
-  // Keep this variable with the OLD name and OLD type so that Motoko can
-  // deserialise the on-disk data from the previous canister version.
   type OldMGCRecord = {
     id : Text;
     gearName : Text;
@@ -29,6 +27,20 @@ actor {
     remarks : Text;
   };
   let mgcRecords = Map.empty<Text, OldMGCRecord>();
+
+  // V2 MGCRecord (no machineNo).
+  type MGCRecordV2 = {
+    id : Text;
+    gearName : Text;
+    gearNo : Text;
+    gearType : Text;
+    partSerialNo : Text;
+    calibrationDate : Text;
+    dueDate : Text;
+    status : Text;
+    remarks : Text;
+  };
+  let mgcRecordsV2 = Map.empty<Text, MGCRecordV2>();
 
   // ── Current types ────────────────────────────────────────────────────────
   type MachinePart = { name : Text; status : Text };
@@ -48,6 +60,7 @@ actor {
     gearNo : Text;
     gearType : Text;
     partSerialNo : Text;
+    machineNo : Text;
     calibrationDate : Text;
     dueDate : Text;
     status : Text;
@@ -56,23 +69,40 @@ actor {
 
   let machines = Map.empty<Text, MachineRecord>();
 
-  // New stable storage for MGC records (V2 with gearType + partSerialNo).
-  let mgcRecordsV2 = Map.empty<Text, MGCRecord>();
+  // V3 stable storage for MGC records (adds machineNo).
+  let mgcRecordsV3 = Map.empty<Text, MGCRecord>();
 
-  // Migrate old records into V2 on every init/upgrade (idempotent).
+  // Migrate old records into V3 on every init/upgrade (idempotent).
   system func postupgrade() {
     for ((k, old) in mgcRecords.entries()) {
-      if (mgcRecordsV2.get(k) == null) {
-        mgcRecordsV2.add(k, {
+      if (mgcRecordsV3.get(k) == null) {
+        mgcRecordsV3.add(k, {
           id = old.id;
           gearName = old.gearName;
           gearNo = old.gearNo;
           gearType = "";
           partSerialNo = "";
+          machineNo = "";
           calibrationDate = old.calibrationDate;
           dueDate = old.dueDate;
           status = old.status;
           remarks = old.remarks;
+        });
+      };
+    };
+    for ((k, v2) in mgcRecordsV2.entries()) {
+      if (mgcRecordsV3.get(k) == null) {
+        mgcRecordsV3.add(k, {
+          id = v2.id;
+          gearName = v2.gearName;
+          gearNo = v2.gearNo;
+          gearType = v2.gearType;
+          partSerialNo = v2.partSerialNo;
+          machineNo = "";
+          calibrationDate = v2.calibrationDate;
+          dueDate = v2.dueDate;
+          status = v2.status;
+          remarks = v2.remarks;
         });
       };
     };
@@ -112,30 +142,31 @@ actor {
     };
   };
 
-  // ── MGC methods (use mgcRecordsV2) ───────────────────────────────────────
+  // ── MGC methods (use mgcRecordsV3) ───────────────────────────────────────
   public shared func addMGCRecord(
     id : Text,
     gearName : Text,
     gearNo : Text,
     gearType : Text,
     partSerialNo : Text,
+    machineNo : Text,
     calibrationDate : Text,
     dueDate : Text,
     status : Text,
     remarks : Text,
   ) : async () {
-    mgcRecordsV2.add(id, {
-      id; gearName; gearNo; gearType; partSerialNo;
+    mgcRecordsV3.add(id, {
+      id; gearName; gearNo; gearType; partSerialNo; machineNo;
       calibrationDate; dueDate; status; remarks;
     });
   };
 
   public query func getAllMGCRecords() : async [MGCRecord] {
-    mgcRecordsV2.values().toArray();
+    mgcRecordsV3.values().toArray();
   };
 
   public shared func deleteMGCRecord(id : Text) : async () {
-    mgcRecordsV2.remove(id);
+    mgcRecordsV3.remove(id);
   };
 
   public shared func updateMGCRecord(
@@ -144,16 +175,17 @@ actor {
     gearNo : Text,
     gearType : Text,
     partSerialNo : Text,
+    machineNo : Text,
     calibrationDate : Text,
     dueDate : Text,
     status : Text,
     remarks : Text,
   ) : async () {
-    switch (mgcRecordsV2.get(id)) {
+    switch (mgcRecordsV3.get(id)) {
       case (?existing) {
-        mgcRecordsV2.add(id, {
+        mgcRecordsV3.add(id, {
           existing with
-          gearName; gearNo; gearType; partSerialNo;
+          gearName; gearNo; gearType; partSerialNo; machineNo;
           calibrationDate; dueDate; status; remarks;
         });
       };

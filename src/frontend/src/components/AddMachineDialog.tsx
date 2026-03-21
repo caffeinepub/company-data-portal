@@ -48,8 +48,20 @@ const EMPTY = {
   dueDate: "",
 };
 
+type MonthType = "" | "Weekly" | "6 Month" | "1 Year";
+
+function calcDueDate(doneDate: string, monthType: MonthType): string {
+  if (!doneDate || !monthType) return "";
+  const d = new Date(doneDate);
+  if (monthType === "Weekly") d.setDate(d.getDate() + 7);
+  else if (monthType === "6 Month") d.setMonth(d.getMonth() + 6);
+  else if (monthType === "1 Year") d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().split("T")[0];
+}
+
 export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
   const [form, setForm] = useState(EMPTY);
+  const [monthType, setMonthType] = useState<MonthType>("");
   const [errors, setErrors] = useState<
     Partial<typeof EMPTY> & { password?: string }
   >({});
@@ -64,8 +76,24 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
   );
 
   const change = (field: keyof typeof EMPTY, value: string) => {
-    setForm((p) => ({ ...p, [field]: value }));
+    setForm((p) => {
+      const next = { ...p, [field]: value };
+      // If doneDate changes and monthType is set, recalculate dueDate
+      if (field === "doneDate" && monthType) {
+        next.dueDate = calcDueDate(value, monthType);
+      }
+      return next;
+    });
     if (errors[field]) setErrors((p) => ({ ...p, [field]: undefined }));
+  };
+
+  const handleMonthTypeChange = (val: MonthType) => {
+    setMonthType(val);
+    if (val && form.doneDate) {
+      const due = calcDueDate(form.doneDate, val);
+      setForm((p) => ({ ...p, dueDate: due }));
+      setErrors((p) => ({ ...p, dueDate: undefined }));
+    }
   };
 
   const validate = () => {
@@ -117,6 +145,7 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
     setPartName("");
     setPartStatus("cleaned");
     setPassword("");
+    setMonthType("");
     setSaving(false);
     onOpenChange(false);
   };
@@ -145,12 +174,7 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
                 className={errors.machineType ? "border-destructive" : ""}
               />
               {errors.machineType && (
-                <p
-                  className="text-xs text-destructive"
-                  data-ocid="add_machine.machine_type.error_state"
-                >
-                  {errors.machineType}
-                </p>
+                <p className="text-xs text-destructive">{errors.machineType}</p>
               )}
             </div>
 
@@ -167,12 +191,7 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
                 className={errors.machineNo ? "border-destructive" : ""}
               />
               {errors.machineNo && (
-                <p
-                  className="text-xs text-destructive"
-                  data-ocid="add_machine.machine_no.error_state"
-                >
-                  {errors.machineNo}
-                </p>
+                <p className="text-xs text-destructive">{errors.machineNo}</p>
               )}
             </div>
 
@@ -189,15 +208,31 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
                 className={errors.doneDate ? "border-destructive" : ""}
               />
               {errors.doneDate && (
-                <p
-                  className="text-xs text-destructive"
-                  data-ocid="add_machine.done_date.error_state"
-                >
-                  {errors.doneDate}
-                </p>
+                <p className="text-xs text-destructive">{errors.doneDate}</p>
               )}
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="month-type" className="text-sm font-medium">
+                Month Type
+              </Label>
+              <select
+                id="month-type"
+                value={monthType}
+                onChange={(e) =>
+                  handleMonthTypeChange(e.target.value as MonthType)
+                }
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">-- Select --</option>
+                <option value="Weekly">Weekly</option>
+                <option value="6 Month">6 Month</option>
+                <option value="1 Year">1 Year</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="due-date" className="text-sm font-medium">
                 Due Date <span className="text-destructive">*</span>
@@ -207,16 +242,14 @@ export default function AddMachineDialog({ open, onOpenChange, onAdd }: Props) {
                 type="date"
                 data-ocid="add_machine.due_date.input"
                 value={form.dueDate}
-                onChange={(e) => change("dueDate", e.target.value)}
+                onChange={(e) => {
+                  setMonthType("");
+                  change("dueDate", e.target.value);
+                }}
                 className={errors.dueDate ? "border-destructive" : ""}
               />
               {errors.dueDate && (
-                <p
-                  className="text-xs text-destructive"
-                  data-ocid="add_machine.due_date.error_state"
-                >
-                  {errors.dueDate}
-                </p>
+                <p className="text-xs text-destructive">{errors.dueDate}</p>
               )}
             </div>
           </div>

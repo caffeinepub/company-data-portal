@@ -48,7 +48,7 @@ const GEAR_TYPES = [
   "3rd gear IS",
   "4th gear IS",
   "Ri Dears IS",
-  "LS 75",
+  "Gears and LS 78",
   "LS 65",
 ];
 
@@ -269,6 +269,7 @@ function exportMGCToExcel(records: MGCRecord[]) {
     "#",
     "Gear Name",
     "Gear No.",
+    "Machine No.",
     "Gear Type",
     "Part Serial No.",
     "Calibration Date",
@@ -280,6 +281,7 @@ function exportMGCToExcel(records: MGCRecord[]) {
     i + 1,
     r.gearName,
     r.gearNo,
+    r.machineNo || "-",
     r.gearType || "-",
     r.partSerialNo || "-",
     r.calibrationDate || "-",
@@ -314,6 +316,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
   // Form state
   const [gearName, setGearName] = useState("");
   const [gearNo, setGearNo] = useState("");
+  const [machineNo, setMachineNo] = useState("");
   const [gearType, setGearType] = useState("");
   const [partSerialNo, setPartSerialNo] = useState("");
   const [calibrationDate, setCalibrationDate] = useState("");
@@ -384,6 +387,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
       gearNo,
       gearType,
       partSerialNo,
+      machineNo,
       calibrationDate,
       dueDate,
       status,
@@ -397,6 +401,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
         gearNo,
         gearType,
         partSerialNo,
+        machineNo,
         calibrationDate,
         dueDate,
         status,
@@ -405,6 +410,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
       .catch(() => {});
     setGearName("");
     setGearNo("");
+    setMachineNo("");
     setGearType("");
     setPartSerialNo("");
     setCalibrationDate("");
@@ -463,6 +469,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
           rec.gearNo,
           rec.gearType || "",
           rec.partSerialNo || "",
+          rec.machineNo || "",
           newCalDate,
           newDueDate,
           rec.status,
@@ -642,6 +649,9 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                             Gear No.
                           </TableHead>
                           <TableHead className="font-semibold">
+                            Machine No.
+                          </TableHead>
+                          <TableHead className="font-semibold">
                             Gear Type
                           </TableHead>
                           <TableHead className="font-semibold">
@@ -683,6 +693,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                               {rec.gearName}
                             </TableCell>
                             <TableCell>{rec.gearNo}</TableCell>
+                            <TableCell>{rec.machineNo || "-"}</TableCell>
                             <TableCell>{rec.gearType || "-"}</TableCell>
                             <TableCell>{rec.partSerialNo || "-"}</TableCell>
                             <TableCell>{rec.calibrationDate || "-"}</TableCell>
@@ -883,6 +894,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
         <div className="container mx-auto px-6 py-6 max-w-6xl">
           <Separator className="mb-4" />
           <p className="text-sm text-muted-foreground text-center">
+            Inspire By " Hemant Mahamuni "<br />
             Made by Rahul Vishwakarma
           </p>
         </div>
@@ -934,6 +946,16 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                 value={gearNo}
                 onChange={(e) => setGearNo(e.target.value)}
                 placeholder="e.g. GR-001"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="mgcMachineNo">Machine No.</Label>
+              <Input
+                id="mgcMachineNo"
+                data-ocid="mgc.machineno.input"
+                value={machineNo}
+                onChange={(e) => setMachineNo(e.target.value)}
+                placeholder="e.g. MC-001"
               />
             </div>
             <div className="space-y-1">

@@ -18,6 +18,7 @@ export interface MGCRecord {
     gearNo: string;
     gearType: string;
     partSerialNo: string;
+    machineNo: string;
     dueDate: string;
     calibrationDate: string;
     remarks: string;
@@ -31,12 +32,12 @@ export interface MachineRecord {
     machineType: string;
 }
 export interface backendInterface {
-    addMGCRecord(id: string, gearName: string, gearNo: string, gearType: string, partSerialNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
+    addMGCRecord(id: string, gearName: string, gearNo: string, gearType: string, partSerialNo: string, machineNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
     addMachine(id: string, machineType: string, machineNo: string, doneDate: string, dueDate: string, parts: Array<MachinePart>): Promise<void>;
     deleteMGCRecord(id: string): Promise<void>;
     deleteMachine(id: string): Promise<void>;
     getAllMGCRecords(): Promise<Array<MGCRecord>>;
     getAllMachines(): Promise<Array<MachineRecord>>;
-    updateMGCRecord(id: string, gearName: string, gearNo: string, gearType: string, partSerialNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
+    updateMGCRecord(id: string, gearName: string, gearNo: string, gearType: string, partSerialNo: string, machineNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
     updateMachine(id: string, doneDate: string, dueDate: string, parts: Array<MachinePart>): Promise<void>;
 }

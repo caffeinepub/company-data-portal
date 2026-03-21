@@ -273,6 +273,7 @@ export default function DataPortal({ onNavigateMGC }: DataPortalProps) {
         <div className="container mx-auto px-6 py-6 max-w-6xl">
           <Separator className="mb-4" />
           <p className="text-sm text-muted-foreground text-center">
+            Inspire By " Hemant Mahamuni "<br />
             Made by Rahul Vishwakarma
           </p>
         </div>

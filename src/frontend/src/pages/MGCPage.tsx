@@ -339,6 +339,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
   const [rescheduleCalibrationDate, setRescheduleCalibrationDate] =
     useState("");
   const [rescheduleDueDate, setRescheduleDueDate] = useState("");
+  const [rescheduleMonthType, setRescheduleMonthType] = useState("");
   const [reschedulePassword, setReschedulePassword] = useState("");
   const [rescheduleError, setRescheduleError] = useState("");
   const [rescheduling, setRescheduling] = useState(false);
@@ -356,6 +357,22 @@ export default function MGCPage({ onBack }: MGCPageProps) {
     if (monthType && val) {
       const months = monthType === "6month" ? 6 : 12;
       setDueDate(addMonthsToDate(val, months));
+    }
+  };
+
+  const handleRescheduleCalibrationDateChange = (val: string) => {
+    setRescheduleCalibrationDate(val);
+    if (rescheduleMonthType && val) {
+      const months = rescheduleMonthType === "6month" ? 6 : 12;
+      setRescheduleDueDate(addMonthsToDate(val, months));
+    }
+  };
+
+  const handleRescheduleMonthTypeChange = (val: string) => {
+    setRescheduleMonthType(val);
+    if (val && rescheduleCalibrationDate) {
+      const months = val === "6month" ? 6 : 12;
+      setRescheduleDueDate(addMonthsToDate(rescheduleCalibrationDate, months));
     }
   };
 
@@ -480,6 +497,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
     setRescheduleId(null);
     setRescheduleCalibrationDate("");
     setRescheduleDueDate("");
+    setRescheduleMonthType("");
     setReschedulePassword("");
     setRescheduling(false);
   };
@@ -717,7 +735,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                                     type="date"
                                     value={rescheduleCalibrationDate}
                                     onChange={(e) =>
-                                      setRescheduleCalibrationDate(
+                                      handleRescheduleCalibrationDateChange(
                                         e.target.value,
                                       )
                                     }
@@ -725,6 +743,21 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                                     className="h-7 text-xs"
                                     title="Calibration Date"
                                   />
+                                  {/* Month Type dropdown */}
+                                  <select
+                                    value={rescheduleMonthType}
+                                    onChange={(e) =>
+                                      handleRescheduleMonthTypeChange(
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="h-7 w-full rounded-md border border-input bg-background px-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                                    title="Month Type"
+                                  >
+                                    <option value="">-- Month Type --</option>
+                                    <option value="6month">6 Month</option>
+                                    <option value="1year">1 Year</option>
+                                  </select>
                                   <Input
                                     type="date"
                                     value={rescheduleDueDate}
@@ -772,6 +805,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                                         setRescheduleId(null);
                                         setRescheduleCalibrationDate("");
                                         setRescheduleDueDate("");
+                                        setRescheduleMonthType("");
                                         setReschedulePassword("");
                                         setRescheduleError("");
                                       }}
@@ -792,6 +826,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                                       rec.calibrationDate || "",
                                     );
                                     setRescheduleDueDate(rec.dueDate || "");
+                                    setRescheduleMonthType("");
                                     setReschedulePassword("");
                                     setRescheduleError("");
                                     setDeleteId(null);
@@ -868,6 +903,7 @@ export default function MGCPage({ onBack }: MGCPageProps) {
                                     setRescheduleId(null);
                                     setRescheduleCalibrationDate("");
                                     setRescheduleDueDate("");
+                                    setRescheduleMonthType("");
                                     setReschedulePassword("");
                                     setRescheduleError("");
                                   }}

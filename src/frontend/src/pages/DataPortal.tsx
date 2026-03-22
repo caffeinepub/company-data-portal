@@ -207,7 +207,7 @@ export default function DataPortal({ onNavigateMGC }: DataPortalProps) {
               <div className="flex items-center gap-2 text-muted-foreground ml-2">
                 <Building2 className="h-4 w-4" />
                 <span className="text-sm font-medium hidden sm:block">
-                  Enterprise Suite
+                  Tata Motors
                 </span>
               </div>
             </div>

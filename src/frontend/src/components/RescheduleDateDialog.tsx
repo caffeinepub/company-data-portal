@@ -14,6 +14,17 @@ import type { MachineRecord } from "./AddMachineDialog";
 
 const RESCHEDULE_PASSWORD = "admin@1234";
 
+type MonthType = "" | "Weekly" | "6 Month" | "1 Year";
+
+function calcDueDate(doneDate: string, monthType: MonthType): string {
+  if (!doneDate || !monthType) return "";
+  const base = new Date(doneDate);
+  if (monthType === "Weekly") base.setDate(base.getDate() + 7);
+  else if (monthType === "6 Month") base.setMonth(base.getMonth() + 6);
+  else if (monthType === "1 Year") base.setFullYear(base.getFullYear() + 1);
+  return base.toISOString().split("T")[0];
+}
+
 interface Props {
   machine: MachineRecord | null;
   open: boolean;
@@ -29,6 +40,7 @@ export default function RescheduleDateDialog({
 }: Props) {
   const [doneDate, setDoneDate] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [monthType, setMonthType] = useState<MonthType>("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,10 +54,31 @@ export default function RescheduleDateDialog({
     if (machine) {
       setDoneDate(machine.doneDate || "");
       setDueDate(machine.dueDate || "");
+      setMonthType("");
       setPassword("");
       setErrors({});
     }
   }, [machine]);
+
+  const handleDoneDateChange = (val: string) => {
+    setDoneDate(val);
+    setErrors((p) => ({ ...p, doneDate: undefined }));
+    if (monthType && val) {
+      const auto = calcDueDate(val, monthType);
+      if (auto) setDueDate(auto);
+    }
+  };
+
+  const handleMonthTypeChange = (val: MonthType) => {
+    setMonthType(val);
+    if (val && doneDate) {
+      const auto = calcDueDate(doneDate, val);
+      if (auto) {
+        setDueDate(auto);
+        setErrors((p) => ({ ...p, dueDate: undefined }));
+      }
+    }
+  };
 
   const validate = () => {
     const e: typeof errors = {};
@@ -101,15 +134,32 @@ export default function RescheduleDateDialog({
               type="date"
               data-ocid="reschedule.done_date.input"
               value={doneDate}
-              onChange={(e) => {
-                setDoneDate(e.target.value);
-                setErrors((p) => ({ ...p, doneDate: undefined }));
-              }}
+              onChange={(e) => handleDoneDateChange(e.target.value)}
               className={errors.doneDate ? "border-destructive" : ""}
             />
             {errors.doneDate && (
               <p className="text-xs text-destructive">{errors.doneDate}</p>
             )}
+          </div>
+
+          {/* Month Type */}
+          <div className="space-y-1.5">
+            <Label htmlFor="rs-month-type" className="text-sm font-medium">
+              Month Type
+            </Label>
+            <select
+              id="rs-month-type"
+              value={monthType}
+              onChange={(e) =>
+                handleMonthTypeChange(e.target.value as MonthType)
+              }
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="">-- Select Month Type --</option>
+              <option value="Weekly">Weekly</option>
+              <option value="6 Month">6 Month</option>
+              <option value="1 Year">1 Year</option>
+            </select>
           </div>
 
           <div className="space-y-1.5">

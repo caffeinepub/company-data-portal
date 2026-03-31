@@ -97,9 +97,12 @@ export interface MGCRecord {
     id: string;
     status: string;
     gearName: string;
+    gearNo: string;
+    gearType: string;
+    partSerialNo: string;
+    machineNo: string;
     dueDate: string;
     calibrationDate: string;
-    gearNo: string;
     remarks: string;
 }
 export interface MachineRecord {
@@ -111,28 +114,28 @@ export interface MachineRecord {
     machineType: string;
 }
 export interface backendInterface {
-    addMGCRecord(id: string, gearName: string, gearNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
+    addMGCRecord(id: string, gearName: string, gearNo: string, gearType: string, partSerialNo: string, machineNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
     addMachine(id: string, machineType: string, machineNo: string, doneDate: string, dueDate: string, parts: Array<MachinePart>): Promise<void>;
     deleteMGCRecord(id: string): Promise<void>;
     deleteMachine(id: string): Promise<void>;
     getAllMGCRecords(): Promise<Array<MGCRecord>>;
     getAllMachines(): Promise<Array<MachineRecord>>;
-    updateMGCRecord(id: string, gearName: string, gearNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
+    updateMGCRecord(id: string, gearName: string, gearNo: string, gearType: string, partSerialNo: string, machineNo: string, calibrationDate: string, dueDate: string, status: string, remarks: string): Promise<void>;
     updateMachine(id: string, doneDate: string, dueDate: string, parts: Array<MachinePart>): Promise<void>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
-    async addMGCRecord(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string): Promise<void> {
+    async addMGCRecord(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string, arg9: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.addMGCRecord(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                const result = await this.actor.addMGCRecord(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addMGCRecord(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            const result = await this.actor.addMGCRecord(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             return result;
         }
     }
@@ -206,17 +209,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateMGCRecord(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string): Promise<void> {
+    async updateMGCRecord(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string, arg9: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateMGCRecord(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                const result = await this.actor.updateMGCRecord(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateMGCRecord(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            const result = await this.actor.updateMGCRecord(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             return result;
         }
     }

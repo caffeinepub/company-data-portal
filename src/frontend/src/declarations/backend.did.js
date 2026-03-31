@@ -16,9 +16,12 @@ export const MGCRecord = IDL.Record({
   'id' : IDL.Text,
   'status' : IDL.Text,
   'gearName' : IDL.Text,
+  'gearNo' : IDL.Text,
+  'gearType' : IDL.Text,
+  'partSerialNo' : IDL.Text,
+  'machineNo' : IDL.Text,
   'dueDate' : IDL.Text,
   'calibrationDate' : IDL.Text,
-  'gearNo' : IDL.Text,
   'remarks' : IDL.Text,
 });
 export const MachineRecord = IDL.Record({
@@ -32,7 +35,7 @@ export const MachineRecord = IDL.Record({
 
 export const idlService = IDL.Service({
   'addMGCRecord' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [],
       [],
     ),
@@ -46,7 +49,7 @@ export const idlService = IDL.Service({
   'getAllMGCRecords' : IDL.Func([], [IDL.Vec(MGCRecord)], ['query']),
   'getAllMachines' : IDL.Func([], [IDL.Vec(MachineRecord)], ['query']),
   'updateMGCRecord' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [],
       [],
     ),
@@ -65,9 +68,12 @@ export const idlFactory = ({ IDL }) => {
     'id' : IDL.Text,
     'status' : IDL.Text,
     'gearName' : IDL.Text,
+    'gearNo' : IDL.Text,
+    'gearType' : IDL.Text,
+    'partSerialNo' : IDL.Text,
+    'machineNo' : IDL.Text,
     'dueDate' : IDL.Text,
     'calibrationDate' : IDL.Text,
-    'gearNo' : IDL.Text,
     'remarks' : IDL.Text,
   });
   const MachineRecord = IDL.Record({
@@ -81,7 +87,7 @@ export const idlFactory = ({ IDL }) => {
   
   return IDL.Service({
     'addMGCRecord' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [],
         [],
       ),
@@ -102,7 +108,7 @@ export const idlFactory = ({ IDL }) => {
     'getAllMGCRecords' : IDL.Func([], [IDL.Vec(MGCRecord)], ['query']),
     'getAllMachines' : IDL.Func([], [IDL.Vec(MachineRecord)], ['query']),
     'updateMGCRecord' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [],
         [],
       ),

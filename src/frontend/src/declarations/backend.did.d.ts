@@ -14,9 +14,12 @@ export interface MGCRecord {
   'id' : string,
   'status' : string,
   'gearName' : string,
+  'gearNo' : string,
+  'gearType' : string,
+  'partSerialNo' : string,
+  'machineNo' : string,
   'dueDate' : string,
   'calibrationDate' : string,
-  'gearNo' : string,
   'remarks' : string,
 }
 export interface MachinePart { 'status' : string, 'name' : string }
@@ -30,7 +33,7 @@ export interface MachineRecord {
 }
 export interface _SERVICE {
   'addMGCRecord' : ActorMethod<
-    [string, string, string, string, string, string, string],
+    [string, string, string, string, string, string, string, string, string, string],
     undefined
   >,
   'addMachine' : ActorMethod<
@@ -42,7 +45,7 @@ export interface _SERVICE {
   'getAllMGCRecords' : ActorMethod<[], Array<MGCRecord>>,
   'getAllMachines' : ActorMethod<[], Array<MachineRecord>>,
   'updateMGCRecord' : ActorMethod<
-    [string, string, string, string, string, string, string],
+    [string, string, string, string, string, string, string, string, string, string],
     undefined
   >,
   'updateMachine' : ActorMethod<

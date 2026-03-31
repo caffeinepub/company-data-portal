@@ -376,6 +376,11 @@ export default function MGCPage({ onBack }: MGCPageProps) {
     }
   };
 
+  const reloadRecords = async (b: backendInterface) => {
+    const data = await b.getAllMGCRecords();
+    setRecords(data);
+  };
+
   useEffect(() => {
     if (!backend || isFetching) return;
     setLoading(true);
@@ -396,23 +401,11 @@ export default function MGCPage({ onBack }: MGCPageProps) {
       setFormError("Incorrect password.");
       return;
     }
+    if (!backend) return;
     setSaving(true);
-    const id = `mgc_${Date.now()}`;
-    const newRecord: MGCRecord = {
-      id,
-      gearName,
-      gearNo,
-      gearType,
-      partSerialNo,
-      machineNo,
-      calibrationDate,
-      dueDate,
-      status,
-      remarks,
-    };
-    setRecords((prev) => [...prev, newRecord]);
-    backend
-      ?.addMGCRecord(
+    try {
+      const id = `mgc_${Date.now()}`;
+      await backend.addMGCRecord(
         id,
         gearName,
         gearNo,
@@ -423,8 +416,14 @@ export default function MGCPage({ onBack }: MGCPageProps) {
         dueDate,
         status,
         remarks,
-      )
-      .catch(() => {});
+      );
+    } catch (err) {
+      console.error("MGC addMGCRecord error:", err);
+      setFormError("Failed to save record. Please try again.");
+      setSaving(false);
+      return;
+    }
+    // Save succeeded — reset form and close
     setGearName("");
     setGearNo("");
     setMachineNo("");
@@ -436,8 +435,12 @@ export default function MGCPage({ onBack }: MGCPageProps) {
     setStatus("Calibrated");
     setRemarks("");
     setFormPassword("");
-    setSaving(false);
     setAddOpen(false);
+    setSaving(false);
+    // Reload list silently (don't block UI or show error)
+    reloadRecords(backend).catch((err) =>
+      console.error("MGC reload error:", err),
+    );
   };
 
   const handleDelete = async () => {
@@ -446,13 +449,22 @@ export default function MGCPage({ onBack }: MGCPageProps) {
       setDeleteError("Incorrect password.");
       return;
     }
-    if (!deleteId) return;
+    if (!deleteId || !backend) return;
     setDeleting(true);
-    setRecords((prev) => prev.filter((r) => r.id !== deleteId));
-    backend?.deleteMGCRecord(deleteId).catch(() => {});
+    try {
+      await backend.deleteMGCRecord(deleteId);
+    } catch (err) {
+      console.error("MGC deleteMGCRecord error:", err);
+      setDeleteError("Failed to delete record. Please try again.");
+      setDeleting(false);
+      return;
+    }
     setDeleteId(null);
     setDeletePassword("");
     setDeleting(false);
+    reloadRecords(backend).catch((err) =>
+      console.error("MGC reload error:", err),
+    );
   };
 
   const handleReschedule = async () => {
@@ -465,34 +477,29 @@ export default function MGCPage({ onBack }: MGCPageProps) {
       setRescheduleError("Incorrect password.");
       return;
     }
-    if (!rescheduleId) return;
+    if (!rescheduleId || !backend) return;
     setRescheduling(true);
-    const id = rescheduleId;
-    const newCalDate = rescheduleCalibrationDate;
-    const newDueDate = rescheduleDueDate;
-    const rec = records.find((r) => r.id === id);
-    setRecords((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? { ...r, calibrationDate: newCalDate, dueDate: newDueDate }
-          : r,
-      ),
-    );
-    if (rec) {
-      backend
-        ?.updateMGCRecord(
-          id,
+    try {
+      const rec = records.find((r) => r.id === rescheduleId);
+      if (rec) {
+        await backend.updateMGCRecord(
+          rescheduleId,
           rec.gearName,
           rec.gearNo,
           rec.gearType || "",
           rec.partSerialNo || "",
           rec.machineNo || "",
-          newCalDate,
-          newDueDate,
+          rescheduleCalibrationDate,
+          rescheduleDueDate,
           rec.status,
           rec.remarks,
-        )
-        .catch(() => {});
+        );
+      }
+    } catch (err) {
+      console.error("MGC updateMGCRecord error:", err);
+      setRescheduleError("Failed to reschedule. Please try again.");
+      setRescheduling(false);
+      return;
     }
     setRescheduleId(null);
     setRescheduleCalibrationDate("");
@@ -500,6 +507,9 @@ export default function MGCPage({ onBack }: MGCPageProps) {
     setRescheduleMonthType("");
     setReschedulePassword("");
     setRescheduling(false);
+    reloadRecords(backend).catch((err) =>
+      console.error("MGC reload error:", err),
+    );
   };
 
   const afterWidgetFilter = widgetFilter
